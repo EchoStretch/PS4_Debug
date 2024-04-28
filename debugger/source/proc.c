@@ -310,24 +310,24 @@ size_t GetSizeOfProcScanValue(enum cmd_proc_scan_valuetype valType) {
       case valTypeUInt8:
       case valTypeInt8:
          return 1;
-      
+
       // In case variable type is signed/unsigned 16bit integer
       case valTypeUInt16:
       case valTypeInt16:
          return 2;
-      
+
       // In case variable type is signed/unsigned 32bit integer or floating point
       case valTypeUInt32:
       case valTypeInt32:
       case valTypeFloat:
          return 4;
-      
+
       // In case variable type is signed/unsigned 64bit integer or double
       case valTypeUInt64:
       case valTypeInt64:
       case valTypeDouble:
          return 8;
-      
+
       // In case variable type is byte array, string, or none of the above cases
       case valTypeArrBytes:
       case valTypeString:
@@ -348,7 +348,7 @@ int CompareProcScanValues(enum cmd_proc_scan_comparetype cmpType, enum cmd_proc_
       case cmpTypeDecreasedValueBy:    return compare_value_decreased_by(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeChangedValue:        return compare_value_changed(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeUnchangedValue:      return compare_value_unchanged(valType, pScanValue, pMemoryValue, pExtraValue);
-      case cmpTypeUnknownInitialValue: 
+      case cmpTypeUnknownInitialValue:
          return TRUE;
    };
 
@@ -359,35 +359,37 @@ int CompareProcScanValues(enum cmd_proc_scan_comparetype cmpType, enum cmd_proc_
 typedef struct cmd_proc_scan_packet PROC_SCAN_PKT_T, *PPROC_SCAN_PKT;
 
 // Variable type definitions
-typedef unsigned char* PBYTE;
+typedef unsigned char *PBYTE;
+
 // The Default maximum number of addresses 10000
 #define MAX_ADDRESS_COUNT 10000
 
 // Currently Experimental, POC for replicating ctn123's console scan feature
 // NOTE: haven't tested this yet!
 int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
-   // Extracting data from the RPC packet
-   PPROC_SCAN_PKT sp = (PPROC_SCAN_PKT)packet->data;
+   PPROC_SCAN_PKT sp;
+   size_t scanValSize;
+   PBYTE data;
 
-   // Check if the data pointer is valid
-   if (!sp) {
+   // Extract the data from the RPC packet, and check if the data 
+   // pointer isn't valid, and return early if so
+   if (!(sp = (PPROC_SCAN_PKT)packet->data)) {
       // Send status indicating null data
       net_send_status(fd, CMD_DATA_NULL);
       return 1;
    }
 
    // Calculate the length of the value to be scanned
-   size_t valueLength = GetSizeOfProcScanValue(sp->valueType);
-   if (!valueLength) valueLength = sp->lenData;
-   
+   if (!(scanValSize = GetSizeOfProcScanValue(sp->valueType)))
+      scanValSize = sp->lenData;
+
 
    // Allocate memory to store received data
-   PBYTE data = (PBYTE)pfmalloc(sp->lenData);
-   if (!data) {
+   if ((data = (PBYTE)pfmalloc(sp->lenData)) == NULL) {
       net_send_status(fd, CMD_DATA_NULL);
       return 1;
    }
-
+   
    // Notify successful data reception
    net_send_status(fd, CMD_SUCCESS);
 
@@ -406,7 +408,7 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
    // Calculate the size of the memory map
    size_t size = args.num * sizeof(struct proc_vm_map_entry);
    args.maps = (struct proc_vm_map_entry *)pfmalloc(size);
-   if (!args.maps) {
+   if (args.maps == NULL) {
       free(data);
       net_send_status(fd, CMD_DATA_NULL);
       return 1;
@@ -427,7 +429,7 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
    uprintf("scan start");
 
    // Initialize variables for scanning
-   unsigned char *pExtraValue = valueLength == sp->lenData ? NULL : &data[valueLength];
+   unsigned char *pExtraValue = scanValSize == sp->lenData ? NULL : &data[scanValSize];
    unsigned char *scanBuffer = (unsigned char *)pfmalloc(PAGE_SIZE);
 
    // Allocate memory to hold <MAX_ADDRESS_COUNT> number of offsets
@@ -456,7 +458,7 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
       size_t sectionLen = args.maps[i].end - sectionStartAddr;
 
       // Iterate through the memory section
-      for (uint64_t j = 0; j < sectionLen; j += valueLength) {
+      for (uint64_t j = 0; j < sectionLen; j += scanValSize) {
          // If the current offset is at a page boundary, read the next page
          if (j == 0 || !(j % PAGE_SIZE)) {
             sys_proc_rw(
@@ -476,7 +478,7 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
          if (CompareProcScanValues(
             sp->compareType,
             sp->valueType,
-            valueLength,
+            scanValSize,
             data,
             scanBuffer + scanOffset,
             pExtraValue)) {
