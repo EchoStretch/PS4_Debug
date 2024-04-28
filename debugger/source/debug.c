@@ -2,7 +2,7 @@
 // 6/12/2018
 //
 
-#include "debug.h"
+#include "../include/debug.h"
 
 int g_debugging;
 struct server_client *curdbgcli;

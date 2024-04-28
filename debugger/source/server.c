@@ -2,7 +2,7 @@
 // 6/12/2018
 //
 
-#include "server.h"
+#include "../include/server.h"
 
 struct server_client servclients[SERVER_MAXCLIENTS];
 

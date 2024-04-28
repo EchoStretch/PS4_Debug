@@ -2,7 +2,7 @@
 // 6/12/2018
 //
 
-#include "console.h"
+#include "../include/console.h"
 
 int console_reboot_handle(int fd, struct cmd_packet *packet) {
     if(g_debugging) {

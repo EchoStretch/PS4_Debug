@@ -2,7 +2,7 @@
 // 6/12/2018
 //
 
-#include "ptrace.h"
+#include "../include/ptrace.h"
 
 int ptrace(int req, int pid, void *addr, int data) {
     int r;

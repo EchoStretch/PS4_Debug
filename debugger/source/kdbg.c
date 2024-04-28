@@ -2,7 +2,7 @@
 // 6/12/2018
 //
 
-#include "kdbg.h"
+#include "../include/kdbg.h"
 
 void prefault(void *address, size_t size) {
     for(uint64_t i = 0; i < size; i++) {

@@ -2,8 +2,8 @@
 // 6/12/2018
 //
 
-#include "../include/proc.h"
-#include "../include/compare.h"
+#include "../include/../include/proc.h"
+#include "../include/../include/compare.h"
 
 int proc_list_handle(int fd, struct cmd_packet *packet) {
     void *data;
@@ -339,7 +339,7 @@ int CompareProcScanValues(enum cmd_proc_scan_comparetype cmpType, enum cmd_proc_
       case cmpTypeUnchangedValue:      return compare_value_unchanged(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeUnknownInitialValue: return TRUE;
    };
-   
+
    return FALSE;
 }
 

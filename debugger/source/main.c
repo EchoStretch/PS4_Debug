@@ -2,10 +2,10 @@
 // 6/12/2018
 //
 
-#include <ps4.h>
-#include "ptrace.h"
-#include "server.h"
-#include "debug.h"
+#include "../../ps4-payload-sdk/include/ps4.h"
+#include "../include/ptrace.h"
+#include "../include/server.h"
+#include "../include/debug.h"
 
 int _main(void) {
     initKernel();
