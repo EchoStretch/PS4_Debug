@@ -10,60 +10,61 @@
 #include "./net.h"
 #include "./ptrace.h"
 
+// Structure representing 64-bit general-purpose registers
 struct __reg64 {
-    uint64_t r_r15;
-    uint64_t r_r14;
-    uint64_t r_r13;
-    uint64_t r_r12;
-    uint64_t r_r11;
-    uint64_t r_r10;
-    uint64_t r_r9;
-    uint64_t r_r8;
-    uint64_t r_rdi;
-    uint64_t r_rsi;
-    uint64_t r_rbp;
-    uint64_t r_rbx;
-    uint64_t r_rdx;
-    uint64_t r_rcx;
-    uint64_t r_rax;
-    uint32_t r_trapno;
-    uint16_t r_fs;
-    uint16_t r_gs;
-    uint32_t r_err;
-    uint16_t r_es;
-    uint16_t r_ds;
-    uint64_t r_rip;
-    uint64_t r_cs;
-    uint64_t r_rflags;
-    uint64_t r_rsp;
-    uint64_t r_ss;
+    uint64_t r_r15;    // Register R15
+    uint64_t r_r14;    // Register R14
+    uint64_t r_r13;    // Register R13
+    uint64_t r_r12;    // Register R12
+    uint64_t r_r11;    // Register R11
+    uint64_t r_r10;    // Register R10
+    uint64_t r_r9;     // Register R9
+    uint64_t r_r8;     // Register R8
+    uint64_t r_rdi;    // Register RDI
+    uint64_t r_rsi;    // Register RSI
+    uint64_t r_rbp;    // Register RBP
+    uint64_t r_rbx;    // Register RBX
+    uint64_t r_rdx;    // Register RDX
+    uint64_t r_rcx;    // Register RCX
+    uint64_t r_rax;    // Register RAX
+    uint32_t r_trapno; // Trap number
+    uint16_t r_fs;     // Segment selector for FS
+    uint16_t r_gs;     // Segment selector for GS
+    uint32_t r_err;    // Error code
+    uint16_t r_es;     // Segment selector for ES
+    uint16_t r_ds;     // Segment selector for DS
+    uint64_t r_rip;    // Instruction pointer
+    uint64_t r_cs;     // Code segment selector
+    uint64_t r_rflags; // RFLAGS register
+    uint64_t r_rsp;    // Stack pointer
+    uint64_t r_ss;     // Stack segment selector
 };
 
-/* Contents of each x87 floating point accumulator */
+// Contents of each x87 floating point accumulator
 struct fpacc87 {
     uint8_t fp_bytes[10];
 };
 
-/* Contents of each SSE extended accumulator */
+// Contents of each SSE extended accumulator
 struct xmmacc {
     uint8_t xmm_bytes[16];
 };
 
-/* Contents of the upper 16 bytes of each AVX extended accumulator */
+// Contents of the upper 16 bytes of each AVX extended accumulator
 struct ymmacc {
     uint8_t ymm_bytes[16];
 };
 
 struct envxmm {
-    uint16_t en_cw; /* control word (16bits) */
-    uint16_t en_sw; /* status word (16bits) */
-    uint8_t en_tw; /* tag word (8bits) */
+    uint16_t en_cw;         // control word (16 bits) 
+    uint16_t en_sw;         // status word (16 bits)
+    uint8_t en_tw;          // tag word (8 bits)
     uint8_t en_zero;
-    uint16_t en_opcode; /* opcode last executed (11 bits ) */
-    uint64_t en_rip; /* floating point instruction pointer */
-    uint64_t en_rdp; /* floating operand pointer */
-    uint32_t en_mxcsr; /* SSE sontorol/status register */
-    uint32_t en_mxcsr_mask; /* valid bits in mxcsr */
+    uint16_t en_opcode;     // opcode last executed (11 bits )
+    uint64_t en_rip;        // floating point instruction pointer
+    uint64_t en_rdp;        // floating operand pointer
+    uint32_t en_mxcsr;      // SSE sontorol/status register
+    uint32_t en_mxcsr_mask; // valid bits in mxcsr
 };
 
 struct savefpu {
@@ -91,7 +92,7 @@ struct savefpu_ymm {
     struct envxmm sv_env;
     struct {
         struct fpacc87 fp_acc;
-        int8_t fp_pad[6];   /* padding */
+        int8_t fp_pad[6]; // padding
     } sv_fp[8];
     struct xmmacc sv_xmm[16];
     uint8_t sv_pad[96];
@@ -99,12 +100,13 @@ struct savefpu_ymm {
 } __attribute__((aligned(64)));
 
 struct __dbreg64 {
-    uint64_t dr[16];	/* debug registers */
-    /* Index 0-3: debug address registers */
-    /* Index 4-5: reserved */
-    /* Index 6: debug status */
-    /* Index 7: debug control */
-    /* Index 8-15: reserved */
+    // Buffer for debug registers!
+    // dr[0-3] is for debug address registers
+    // dr[4-5] is reserved
+    // dr[6] is for debug status
+    // dr[7] is for debug control address registers
+    // dr[8-15] is reserved
+    uint64_t dr[16];
 };
 
 struct debug_interrupt_packet {
@@ -115,6 +117,7 @@ struct debug_interrupt_packet {
     struct savefpu_ymm savefpu;
     struct __dbreg64 dbreg64;
 } __attribute__((packed));
+
 #define DEBUG_INTERRUPT_PACKET_SIZE         0x4A0
 
 #define	DBREG_DR7_DISABLE       0x00
