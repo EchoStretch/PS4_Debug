@@ -327,7 +327,7 @@ size_t GetSizeOfProcScanValue(enum cmd_proc_scan_valuetype valType) {
 int CompareProcScanValues(enum cmd_proc_scan_comparetype cmpType, enum cmd_proc_scan_valuetype valType, size_t valTypeLength, BYTE *pScanValue, BYTE *pMemoryValue, BYTE *pExtraValue) {
    switch (cmpType) {
       case cmpTypeExactValue:          return compare_value_exact(pScanValue, pMemoryValue, valTypeLength);
-      case cmpTypeFuzzyValue:          return compare_value_fuzzy(pScanValue, pMemoryValue, valTypeLength);
+      case cmpTypeFuzzyValue:          return compare_value_fuzzy(valType, pScanValue, pMemoryValue);
       case cmpTypeBiggerThan:          return compare_value_bigger_than(valType, pScanValue, pMemoryValue);
       case cmpTypeSmallerThan:         return compare_value_smaller_than(valType, pScanValue, pMemoryValue);
       case cmpTypeValueBetween:        return compare_value_between(valType, pScanValue, pMemoryValue, pExtraValue);
