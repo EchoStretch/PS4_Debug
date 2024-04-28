@@ -1,7 +1,7 @@
 # PS4Debug (A PS4 Debugging Payload)
 This repository contains my custom version or fork of GiantPluto's FW 6.72 port of the ps4debug payload. I am the sole maintainer of this version and will be responsible for adding new features, pushing code improvements, fixes, etc. 
 
-A huge objective/goal is to make this PS4Debug Source Code firmware-agnostic, meaning that the ps4debug.bin payload compiled from this Source Code will be compatible with the following system firmwares: 5.05, 6.72, 7.02, 7.55, and 9.00. Eliminating the need of having 5 seperate source codes, one for each firmware version.
+A huge objective/goal is to make this PS4Debug Source Code firmware-agnostic, meaning that the ps4debug.bin payload compiled from this Source Code will be compatible with the following system firmwares: **5.05, 6.72, 7.02, 7.55, and 9.00**. Eliminating the need of having 5 seperate source codes, one for each firmware version.
 
 ## TODOs and News
 
