@@ -36,7 +36,7 @@ void memcpy_to_file(const char *fname, uint64_t ptr, uint64_t size) {
   }
 }
 
-static void parse_directory(int ino, int lev, char *parent_name, bool dry_run) {
+static void parse_directory(int ino, int lev, char *parent_name, BOOL dry_run) {
   for (uint32_t z = 0; z < inodes[ino].blocks; z++) {
     uint32_t db = inodes[ino].db[0] + z;
     uint64_t pos = (uint64_t)header->blocksz * db;

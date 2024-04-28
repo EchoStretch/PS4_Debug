@@ -43,7 +43,7 @@ static char *fgets(char *dst, int max, FILE *fp) {
   return (p);
 }
 
-bool isspace(int c) {
+BOOL isspace(int c) {
   return c == ' ' || c == '\t';
 }
 

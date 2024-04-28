@@ -35,7 +35,7 @@ int is_self(const char *fn) {
 
 #define DECRYPT_SIZE 0x100000
 
-bool read_decrypt_segment(int fd, uint64_t index, uint64_t offset, size_t size, uint8_t *out) {
+BOOL read_decrypt_segment(int fd, uint64_t index, uint64_t offset, size_t size, uint8_t *out) {
   uint8_t *outPtr = out;
   uint64_t outSize = size;
   uint64_t realOffset = (index << 32) | offset;

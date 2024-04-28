@@ -80,7 +80,7 @@ int (*fclose)(FILE *stream);
 int (*fprintf)(FILE *stream, const char *format, ...);
 
 int memset_s(void *s, rsize_t smax, int c, rsize_t n) {
-  bool violation = (s == NULL) || (smax > RSIZE_MAX) || (n > RSIZE_MAX) || (n > smax);
+  BOOL violation = (s == NULL) || (smax > RSIZE_MAX) || (n > RSIZE_MAX) || (n > smax);
   if (violation) {
     if ((s != NULL) && !(smax > RSIZE_MAX)) {
       for (rsize_t i = 0; i < smax; ++i) {

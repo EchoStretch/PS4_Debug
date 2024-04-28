@@ -20,7 +20,7 @@
 typedef int errno_t;
 typedef int errno;
 
-typedef int bool;
+typedef int BOOL;
 
 typedef uint64_t size_t;
 typedef uint64_t rsize_t;
