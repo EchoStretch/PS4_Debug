@@ -61,8 +61,7 @@ int compare_value_smaller_than(enum cmd_proc_scan_valuetype valType, BYTE *pScan
     };
 }
 
-
-// Doesn't include casting
+// Doesn't include cstom variable type for casting
 #define COMPARE_BETWEEN_HELPER_REGULAR(ScanValue, MemValue, ExtraValue) \
     if (*ExtraValue > *ScanValue)                                       \
         return *MemValue > *ScanValue && *MemValue < *ExtraValue;       \
