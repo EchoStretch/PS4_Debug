@@ -9,8 +9,8 @@ clean_target() {
 }
 
 # Begin to build each part
-clean_target "kernSDK"
-clean_target "libPS4"
+clean_target "ps4-ksdk"
+clean_target "ps4-payload-sdk"
 clean_target "installer"
 clean_target "debugger"
 clean_target "kdebugger"

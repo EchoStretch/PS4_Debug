@@ -11,8 +11,8 @@ build_target() {
 }
 
 # Begin to build each part
-build_target "kernSDK"
-build_target "libPS4"
+build_target "ps4-ksdk"
+build_target "ps4-payload-sdk"
 build_target "debugger"
 build_target "kdebugger"
 build_target "installer"
