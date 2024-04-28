@@ -61,15 +61,16 @@ int compare_value_smaller_than(enum cmd_proc_scan_valuetype valType, BYTE *pScan
     };
 }
 
+
 // Doesn't include casting
 #define COMPARE_BETWEEN_HELPER_REGULAR(ScanValue, MemValue, ExtraValue) \
-    if (*ExtraValue > *ScanValue)                                  \
-        return *MemValue > *ScanValue && *MemValue < *ExtraValue;  \
-    else                                                           \
+    if (*ExtraValue > *ScanValue)                                       \
+        return *MemValue > *ScanValue && *MemValue < *ExtraValue;       \
+    else                                                                \
         return *MemValue < *ScanValue && *MemValue > *ExtraValue;  
 
 // Supports a custom provided variable type to use for casting
-#define COMPARE_BETWEEN_HELPER_CAST(type, ScanValue, MemValue, ExtraValue)                         \
+#define COMPARE_BETWEEN_HELPER_CAST(type, ScanValue, MemValue, ExtraValue)                            \
     if (*((type*)ExtraValue) > *((type*)ScanValue))                                                   \
         return *((type*)MemValue) > *((type*)ScanValue) && *((type*)MemValue) < *((type*)ExtraValue); \
     else                                                                                              \
