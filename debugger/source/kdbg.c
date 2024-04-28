@@ -13,20 +13,34 @@ void prefault(void *address, size_t size) {
     }
 }
 
+// Custom malloc implementation which prefault's the 
+// allocated memory
 void *pfmalloc(size_t size) {
-    void *p = malloc(size);
-    prefault(p, size);
-    return p;
+    // Attempt to allocate memory and handle if malloc
+    // were to fail, by returning NULL
+    void *new_mem = malloc(size);
+    if (new_mem == NULL)
+        return NULL;
+
+    // Prefault the newly allocated memory
+    prefault(new_mem, size);
+    return new_mem;
 }
 
+// Custom realloc implementation which only prefault's
+// the newly expanded, unused memory region
 void *pfrealloc(void *ptr, size_t size, size_t old_size) {
-    void *p = realloc(ptr, size);
-    if (p == NULL) return NULL;
+    // Attempt to resize the memory region and handle if 
+    // realloc were to fail, by returning NULL
+    void *new_mem = realloc(ptr, size);
+    if (new_mem == NULL)
+        return NULL;
 
+    // Prefault the new, unused, expanded memory region
     if (size > old_size)
-        prefault((char *)p + old_size, size - old_size);
+        prefault((char *)new_mem + old_size, size - old_size);
 
-    return p;
+    return new_mem;
 }
 
 void hexdump(void *data, size_t size) {
