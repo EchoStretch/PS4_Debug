@@ -4,18 +4,18 @@
 
 #ifndef _PROC_H
 #define _PROC_H
-
-#include <ps4.h>
 #include <stdbool.h>
-#include "protocol.h"
-#include "net.h"
+#include "../../ps4-payload-sdk/include/types.h"
+#include "./protocol.h"
+#include "./net.h"
 
+// Structure representing a memory map entry for a process
 struct proc_vm_map_entry {
-    char name[32];
-    uint64_t start;
-    uint64_t end;
-    uint64_t offset;
-    uint16_t prot;
+    char name[32]; // Name of the mapped region
+    uint64_t start; // Start address of the mapped region
+    uint64_t end; // End address of the mapped region
+    uint64_t offset; // Offset of the mapped region
+    uint16_t prot; // Protection flags of the mapped region
 } __attribute__((packed));
 
 int proc_list_handle(int fd, struct cmd_packet *packet);
