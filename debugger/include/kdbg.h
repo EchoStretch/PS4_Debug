@@ -130,5 +130,5 @@ int sys_proc_list(struct proc_list_entry *procs, uint64_t *num);
 void prefault(void *address, size_t size);
 void *pfmalloc(size_t size);
 void hexdump(void *data, size_t size);
-
+void *pfrealloc(void *ptr, size_t size, size_t old_size) ;
 #endif
