@@ -1,5 +1,3 @@
-CC	:= gcc
-AR	:= ar
 ODIR	:= build
 SDIR	:= source
 IDIR	:= include
@@ -11,18 +9,24 @@ OBJS	:= $(patsubst $(SDIR)/%.c, build/%.o, $(CFILES)) $(patsubst $(SDIR)/%.s, bu
 TARGET = libPS4.a
 
 $(TARGET): $(ODIR) $(OBJS)
-	$(AR) rcs $@ $(OBJS)
+	@echo "Building $@..."
+	@ar rcs $@ $(OBJS)
+	@echo "$@ is ready!"
 
 $(ODIR)/%.o: $(SDIR)/%.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+	@echo "Compiling $<..."
+	@gcc -c -o $@ $< $(CFLAGS)
 
 $(ODIR)/%.o: $(SDIR)/%.s
-	$(CC) -c -o $@ $< $(CFLAGS)
+	@echo "Assembling $<..."
+	@gcc -c -o $@ $< $(CFLAGS)
 
 $(ODIR):
+	@echo "Creating build directory: $(ODIR)..."
 	@mkdir $@
 
 .PHONY: clean
 
 clean:
-	rm -rf $(TARGET) $(ODIR)
+	@echo "Cleaning up..."
+	@rm -rf $(TARGET) $(ODIR)
