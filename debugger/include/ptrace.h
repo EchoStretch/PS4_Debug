@@ -2,6 +2,7 @@
 // 6/12/2018
 //
 
+#pragma once
 #ifndef _PTRACE_H
 #define _PTRACE_H
 

@@ -2,6 +2,7 @@
 // 6/12/2018
 //
 
+#pragma once
 #ifndef _SERVER_H
 #define _SERVER_H
 

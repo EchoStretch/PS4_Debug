@@ -2,6 +2,7 @@
 // 6/12/2018
 //
 
+#pragma once
 #ifndef _PROC_H
 #define _PROC_H
 #include <stdbool.h>

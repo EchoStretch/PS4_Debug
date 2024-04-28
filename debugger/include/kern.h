@@ -1,7 +1,7 @@
 // golden
 // 6/12/2018
 //
-
+#pragma once
 #ifndef _KERN_H
 #define _KERN_H
 

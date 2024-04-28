@@ -2,6 +2,7 @@
 // 6/12/2018
 //
 
+#pragma once
 #ifndef _NET_H
 #define _NET_H
 
