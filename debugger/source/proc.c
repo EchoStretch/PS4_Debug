@@ -320,8 +320,8 @@ size_t GetSizeOfProcScanValue(enum cmd_proc_scan_valuetype valType) {
       case valTypeArrBytes:
       case valTypeString:
       default:
-         return NULL;
-   }
+         return 0;
+   };
 }
 
 int CompareProcScanValues(enum cmd_proc_scan_comparetype cmpType, enum cmd_proc_scan_valuetype valType, size_t valTypeLength, BYTE *pScanValue, BYTE *pMemoryValue, BYTE *pExtraValue) {
