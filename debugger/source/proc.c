@@ -301,26 +301,37 @@ int proc_protect_handle(int fd, struct cmd_packet *packet) {
    return 0;
 }
 
+// Function will depending on the type set for the value to use in scanning
+// return the related variable size: 
+// basically the value of sizeof(<value type>)
 size_t GetSizeOfProcScanValue(enum cmd_proc_scan_valuetype valType) {
    switch (valType) {
+      // In case variable type is signed/unsigned 8bit integer
       case valTypeUInt8:
       case valTypeInt8:
          return 1;
+      
+      // In case variable type is signed/unsigned 16bit integer
       case valTypeUInt16:
       case valTypeInt16:
          return 2;
+      
+      // In case variable type is signed/unsigned 32bit integer or floating point
       case valTypeUInt32:
       case valTypeInt32:
       case valTypeFloat:
          return 4;
+      
+      // In case variable type is signed/unsigned 64bit integer or double
       case valTypeUInt64:
       case valTypeInt64:
       case valTypeDouble:
          return 8;
+      
+      // In case variable type is byte array, string, or none of the above cases
       case valTypeArrBytes:
       case valTypeString:
-      default:
-         return 0;
+      default: return 0;
    };
 }
 
