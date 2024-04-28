@@ -1,5 +1,5 @@
 # Define paths and variables
-KSDK := ../ps4-ksdk/
+KSDK := ../ps4-ksdk
 
 LFILE = ./kdebugger.x
 
