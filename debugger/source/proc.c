@@ -734,30 +734,19 @@ int proc_free_handle(int fd, struct cmd_packet *packet) {
 
 int proc_handle(int fd, struct cmd_packet *packet) {
    switch (packet->cmd) {
-      case CMD_PROC_LIST:
-         return proc_list_handle(fd, packet);
-      case CMD_PROC_READ:
-         return proc_read_handle(fd, packet);
-      case CMD_PROC_WRITE:
-         return proc_write_handle(fd, packet);
-      case CMD_PROC_MAPS:
-         return proc_maps_handle(fd, packet);
-      case CMD_PROC_INTALL:
-         return proc_install_handle(fd, packet);
-      case CMD_PROC_CALL:
-         return proc_call_handle(fd, packet);
-      case CMD_PROC_ELF:
-         return proc_elf_handle(fd, packet);
-      case CMD_PROC_PROTECT:
-         return proc_protect_handle(fd, packet);
-      case CMD_PROC_SCAN:
-         return proc_scan_handle(fd, packet);
-      case CMD_PROC_INFO:
-         return proc_info_handle(fd, packet);
-      case CMD_PROC_ALLOC:
-         return proc_alloc_handle(fd, packet);
-      case CMD_PROC_FREE:
-         return proc_free_handle(fd, packet);
+      case CMD_PROC_LIST:return proc_list_handle(fd, packet);
+      case CMD_PROC_READ:return proc_read_handle(fd, packet);
+      case CMD_PROC_WRITE:return proc_write_handle(fd, packet);
+      case CMD_PROC_MAPS:return proc_maps_handle(fd, packet);
+      case CMD_PROC_INTALL:return proc_install_handle(fd, packet);
+      case CMD_PROC_CALL:return proc_call_handle(fd, packet);
+      case CMD_PROC_ELF:return proc_elf_handle(fd, packet);
+      case CMD_PROC_PROTECT:return proc_protect_handle(fd, packet);
+      case CMD_PROC_SCAN:return proc_scan_handle(fd, packet);
+      case CMD_PROC_INFO:return proc_info_handle(fd, packet);
+      case CMD_PROC_ALLOC:return proc_alloc_handle(fd, packet);
+      case CMD_PROC_FREE:return proc_free_handle(fd, packet);
+      case CMD_PROC_CONSOLE_SCAN: return proc_console_scan_handle(fd,packet);
    }
 
    return 1;
