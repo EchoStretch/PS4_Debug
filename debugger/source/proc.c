@@ -334,7 +334,7 @@ int CompareProcScanValues(enum cmd_proc_scan_comparetype cmpType, enum cmd_proc_
       case cmpTypeIncreasedValue:      return compare_value_increased(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeIncreasedValueBy:    return compare_value_increased_by(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeDecreasedValue:      return compare_value_decreased(valType, pScanValue, pMemoryValue, pExtraValue);
-      case cmpTypeDecreasedValueBy:    return compare_value_decreasedy_by(valType, pScanValue, pMemoryValue, pExtraValue);
+      case cmpTypeDecreasedValueBy:    return compare_value_decreased_by(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeChangedValue:        return compare_value_changed(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeUnchangedValue:      return compare_value_unchanged(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeUnknownInitialValue: return TRUE;
