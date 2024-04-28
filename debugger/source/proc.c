@@ -746,7 +746,7 @@ int proc_handle(int fd, struct cmd_packet *packet) {
       case CMD_PROC_INFO:         return proc_info_handle(fd, packet);
       case CMD_PROC_ALLOC:        return proc_alloc_handle(fd, packet);
       case CMD_PROC_FREE:         return proc_free_handle(fd, packet);
-      case CMD_PROC_CONSOLE_SCAN: return proc_console_scan_handle(fd,packet);
+      case CMD_PROC_CONSOLE_SCAN: return proc_console_scan_handle(fd, packet);
       default: return -1;
    };
 }
