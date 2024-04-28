@@ -389,7 +389,7 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
       net_send_status(fd, CMD_DATA_NULL);
       return 1;
    }
-   
+
    // Notify successful data reception
    net_send_status(fd, CMD_SUCCESS);
 
@@ -431,6 +431,12 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
    // Initialize variables for scanning
    unsigned char *pExtraValue = scanValSize == sp->lenData ? NULL : &data[scanValSize];
    unsigned char *scanBuffer = (unsigned char *)pfmalloc(PAGE_SIZE);
+   if (scanBuffer == NULL) {
+      free(args.maps);
+      free(data);
+      net_send_status(fd, CMD_DATA_NULL);
+      return 1;
+   }
 
    // Allocate memory to hold <MAX_ADDRESS_COUNT> number of offsets
    uint64_t *valid_addresses = (uint64_t *)pfmalloc(MAX_ADDRESS_COUNT * sizeof(uint64_t));
