@@ -337,13 +337,18 @@ int CompareProcScanValues(enum cmd_proc_scan_comparetype cmpType, enum cmd_proc_
       case cmpTypeDecreasedValueBy:    return compare_value_decreased_by(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeChangedValue:        return compare_value_changed(valType, pScanValue, pMemoryValue, pExtraValue);
       case cmpTypeUnchangedValue:      return compare_value_unchanged(valType, pScanValue, pMemoryValue, pExtraValue);
-      case cmpTypeUnknownInitialValue: return TRUE;
+      case cmpTypeUnknownInitialValue: 
+         return TRUE;
    };
 
    return FALSE;
 }
 
+// Structure type definitions
+typedef struct cmd_proc_scan_packet PROC_SCAN_PKT_T, *PPROC_SCAN_PKT;
 
+// Variable type definitions
+typedef unsigned char* PBYTE;
 // The Default maximum number of addresses 10000
 #define MAX_ADDRESS_COUNT 10000
 
@@ -351,7 +356,7 @@ int CompareProcScanValues(enum cmd_proc_scan_comparetype cmpType, enum cmd_proc_
 // NOTE: haven't tested this yet!
 int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
    // Extracting data from the RPC packet
-   struct cmd_proc_scan_packet *sp = (struct cmd_proc_scan_packet *)packet->data;
+   PPROC_SCAN_PKT sp = (PPROC_SCAN_PKT)packet->data;
 
    // Check if the data pointer is valid
    if (!sp) {
@@ -362,12 +367,11 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
 
    // Calculate the length of the value to be scanned
    size_t valueLength = GetSizeOfProcScanValue(sp->valueType);
-   if (!valueLength) {
-      valueLength = sp->lenData;
-   }
+   if (!valueLength) valueLength = sp->lenData;
+   
 
    // Allocate memory to store received data
-   unsigned char *data = (unsigned char *)pfmalloc(sp->lenData);
+   PBYTE data = (PBYTE)pfmalloc(sp->lenData);
    if (!data) {
       net_send_status(fd, CMD_DATA_NULL);
       return 1;
