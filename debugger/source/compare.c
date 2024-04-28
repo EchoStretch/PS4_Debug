@@ -17,9 +17,8 @@ int compare_value_fuzzy(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, 
     } else if (valType == valTypeDouble) {
         double diff = *(double *)pScanValue - *(double *)pMemoryValue;
         return diff < 1.0 && diff > -1.0;
-    } else {
-        return FALSE;
-    }
+    } 
+    return FALSE;
 }
 
 int compare_value_bigger_than(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, BYTE *pMemoryValue) {
@@ -35,8 +34,10 @@ int compare_value_bigger_than(enum cmd_proc_scan_valuetype valType, BYTE *pScanV
         case valTypeFloat:      return *(float *)pMemoryValue > *(float *)pScanValue;
         case valTypeDouble:     return *(double *)pMemoryValue > *(double *)pScanValue;
         case valTypeArrBytes:
-        case valTypeString: return FALSE;
+        case valTypeString: 
+            return FALSE;
     };
+    return -1;
 }
 int compare_value_smaller_than(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, BYTE *pMemoryValue) {
     switch (valType) {
@@ -53,6 +54,8 @@ int compare_value_smaller_than(enum cmd_proc_scan_valuetype valType, BYTE *pScan
         case valTypeArrBytes:
         case valTypeString: return FALSE;
     };
+        return -1;
+
 }
 int compare_value_between(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, BYTE *pMemoryValue, BYTE *pExtraValue) {
     switch (valType) {
@@ -98,7 +101,8 @@ int compare_value_between(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue
             return *(double *)pMemoryValue < *(double *)pScanValue && *(double *)pMemoryValue > *(double *)pExtraValue;
         case valTypeArrBytes:
         case valTypeString: return FALSE;
-    }
+    };
+    return -1;
 }
 int compare_value_increased(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, BYTE *pMemoryValue, BYTE *pExtraValue) {
     switch (valType) {
@@ -132,6 +136,7 @@ int compare_value_increased_by(enum cmd_proc_scan_valuetype valType, BYTE *pScan
         case valTypeString:
             return FALSE;
     }
+    return -1;
 }
 int compare_value_decreased(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, BYTE *pMemoryValue, BYTE *pExtraValue) {
     switch (valType) {
@@ -149,6 +154,7 @@ int compare_value_decreased(enum cmd_proc_scan_valuetype valType, BYTE *pScanVal
         case valTypeString:
             return FALSE;
     }
+    return -1;
 }
 int compare_value_decreased_by(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, BYTE *pMemoryValue, BYTE *pExtraValue) {
     switch (valType) {
@@ -166,6 +172,7 @@ int compare_value_decreased_by(enum cmd_proc_scan_valuetype valType, BYTE *pScan
         case valTypeString:
             return FALSE;
     }
+    return -1;
 }
 int compare_value_changed(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, BYTE *pMemoryValue, BYTE *pExtraValue) {
     switch (valType) {
@@ -183,6 +190,7 @@ int compare_value_changed(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue
         case valTypeString:
             return FALSE;
     };
+    return -1;
 }
 
 int compare_value_unchanged(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, BYTE *pMemoryValue, BYTE *pExtraValue) {
@@ -201,4 +209,5 @@ int compare_value_unchanged(enum cmd_proc_scan_valuetype valType, BYTE *pScanVal
         case valTypeString:
             return FALSE;
     };
+    return -1;
 }
