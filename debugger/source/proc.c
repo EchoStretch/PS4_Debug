@@ -2,7 +2,8 @@
 // 6/12/2018
 //
 
-#include "include/proc.h"
+#include "../include/proc.h"
+#include "../include/compare.h"
 
 int proc_list_handle(int fd, struct cmd_packet *packet) {
     void *data;
@@ -300,423 +301,165 @@ int proc_protect_handle(int fd, struct cmd_packet *packet) {
     return 0;
 }
 
-size_t proc_scan_getSizeOfValueType(cmd_proc_scan_valuetype valType) {
-    switch (valType) {
-       case valTypeUInt8:
-       case valTypeInt8:
-          return 1;
-       case valTypeUInt16:
-       case valTypeInt16:
-          return 2;
-       case valTypeUInt32:
-       case valTypeInt32:
-       case valTypeFloat:
-          return 4;
-       case valTypeUInt64:
-       case valTypeInt64:
-       case valTypeDouble:
-          return 8;
-       case valTypeArrBytes:
-       case valTypeString:
-       default:
-          return NULL;
-    }
+size_t GetSizeOfProcScanValue(enum cmd_proc_scan_valuetype valType) {
+   switch (valType) {
+      case valTypeUInt8:
+      case valTypeInt8:
+         return 1;
+      case valTypeUInt16:
+      case valTypeInt16:
+         return 2;
+      case valTypeUInt32:
+      case valTypeInt32:
+      case valTypeFloat:
+         return 4;
+      case valTypeUInt64:
+      case valTypeInt64:
+      case valTypeDouble:
+         return 8;
+      case valTypeArrBytes:
+      case valTypeString:
+      default:
+         return NULL;
+   }
 }
 
-bool proc_scan_compareValues(cmd_proc_scan_comparetype cmpType, cmd_proc_scan_valuetype valType, size_t valTypeLength,
-                                 unsigned char *pScanValue, unsigned char *pMemoryValue, unsigned char *pExtraValue) {
-    switch (cmpType) {
-       case cmpTypeExactValue:
-       {
-          bool isFound = false;
-          for (size_t j = 0; j < valTypeLength - 1; j++) {
-             isFound = (pScanValue[j] == pMemoryValue[j]);
-             if (!isFound)
-                break;
-          }
-          return isFound;
-       }
-       case cmpTypeFuzzyValue:
-       {
-          if (valType == valTypeFloat) {
-             float diff = *(float *)pScanValue - *(float *)pMemoryValue;
-             return diff < 1.0f && diff > -1.0f;
-          }
-          else if (valType == valTypeDouble) {
-             double diff = *(double *)pScanValue - *(double *)pMemoryValue;
-             return diff < 1.0 && diff > -1.0;
-          }
-          else {
-             return false;
-          }
-       }
-       case cmpTypeBiggerThan:
-       {
-          switch (valType) {
-             case valTypeUInt8:
-                return *pMemoryValue > *pScanValue;
-             case valTypeInt8:
-                return *(int8_t *)pMemoryValue > *(int8_t *)pScanValue;
-             case valTypeUInt16:
-                return *(uint16_t *)pMemoryValue > *(uint16_t *)pScanValue;
-             case valTypeInt16:
-                return *(int16_t *)pMemoryValue > *(int16_t *)pScanValue;
-             case valTypeUInt32:
-                return *(uint32_t *)pMemoryValue > *(uint32_t *)pScanValue;
-             case valTypeInt32:
-                return *(int32_t *)pMemoryValue > *(int32_t *)pScanValue;
-             case valTypeUInt64:
-                return *(uint64_t *)pMemoryValue > *(uint64_t *)pScanValue;
-             case valTypeInt64:
-                return *(int64_t *)pMemoryValue > *(int64_t *)pScanValue;
-             case valTypeFloat:
-                return *(float *)pMemoryValue > *(float *)pScanValue;
-             case valTypeDouble:
-                return *(double *)pMemoryValue > *(double *)pScanValue;
-             case valTypeArrBytes:
-             case valTypeString:
-                return false;
-          }
-       }
-       case cmpTypeSmallerThan:
-       {
-          switch (valType) {
-             case valTypeUInt8:
-                return *pMemoryValue < *pScanValue;
-             case valTypeInt8:
-                return *(int8_t *)pMemoryValue < *(int8_t *)pScanValue;
-             case valTypeUInt16:
-                return *(uint16_t *)pMemoryValue < *(uint16_t *)pScanValue;
-             case valTypeInt16:
-                return *(int16_t *)pMemoryValue < *(int16_t *)pScanValue;
-             case valTypeUInt32:
-                return *(uint32_t *)pMemoryValue < *(uint32_t *)pScanValue;
-             case valTypeInt32:
-                return *(int32_t *)pMemoryValue < *(int32_t *)pScanValue;
-             case valTypeUInt64:
-                return *(uint64_t *)pMemoryValue < *(uint64_t *)pScanValue;
-             case valTypeInt64:
-                return *(int64_t *)pMemoryValue < *(int64_t *)pScanValue;
-             case valTypeFloat:
-                return *(float *)pMemoryValue < *(float *)pScanValue;
-             case valTypeDouble:
-                return *(double *)pMemoryValue < *(double *)pScanValue;
-             case valTypeArrBytes:
-             case valTypeString:
-                return false;
-          }
-       }
-       case cmpTypeValueBetween:
-       {
-          switch (valType) {
-             case valTypeUInt8:
-                if (*pExtraValue > *pScanValue)
-                   return *pMemoryValue > *pScanValue && *pMemoryValue < *pExtraValue;
-                return *pMemoryValue < *pScanValue && *pMemoryValue > *pExtraValue;
-             case valTypeInt8:
-                if (*(int8_t *)pExtraValue > *(int8_t *)pScanValue)
-                   return *(int8_t *)pMemoryValue > *(int8_t *)pScanValue && *(int8_t *)pMemoryValue < *(int8_t*)pExtraValue;
-                return *(int8_t *)pMemoryValue < *(int8_t *)pScanValue && *(int8_t *)pMemoryValue > *(int8_t *)pExtraValue;
-             case valTypeUInt16:
-                if (*(uint16_t *)pExtraValue > *(uint16_t *)pScanValue)
-                   return *(uint16_t *)pMemoryValue > *(uint16_t *)pScanValue && *(uint16_t *)pMemoryValue < *(uint16_t*)pExtraValue;
-                return *(uint16_t *)pMemoryValue < *(uint16_t *)pScanValue && *(uint16_t *)pMemoryValue > *(uint16_t *)pExtraValue;
-             case valTypeInt16:
-                if (*(int16_t *)pExtraValue > *(int16_t *)pScanValue)
-                   return *(int16_t *)pMemoryValue > *(int16_t *)pScanValue && *(int16_t *)pMemoryValue < *(int16_t*)pExtraValue;
-                return *(int16_t *)pMemoryValue < *(int16_t *)pScanValue && *(int16_t *)pMemoryValue > *(int16_t *)pExtraValue;
-             case valTypeUInt32:
-                if (*(uint32_t *)pExtraValue > *(uint32_t *)pScanValue)
-                   return *(uint32_t *)pMemoryValue > *(uint32_t *)pScanValue && *(uint32_t *)pMemoryValue < *(uint32_t*)pExtraValue;
-                return *(uint32_t *)pMemoryValue < *(uint32_t *)pScanValue && *(uint32_t *)pMemoryValue > *(uint32_t *)pExtraValue;
-             case valTypeInt32:
-                if (*(int32_t *)pExtraValue > *(int32_t *)pScanValue)
-                   return *(int32_t *)pMemoryValue > *(int32_t *)pScanValue && *(int32_t *)pMemoryValue < *(int32_t*)pExtraValue;
-                return *(int32_t *)pMemoryValue < *(int32_t *)pScanValue && *(int32_t *)pMemoryValue > *(int32_t *)pExtraValue;
-             case valTypeUInt64:
-                if (*(uint64_t *)pExtraValue > *(uint64_t *)pScanValue)
-                   return *(uint64_t *)pMemoryValue > *(uint64_t *)pScanValue && *(uint64_t *)pMemoryValue < *(uint64_t*)pExtraValue;
-                return *(uint64_t *)pMemoryValue < *(uint64_t *)pScanValue && *(uint64_t *)pMemoryValue > *(uint64_t *)pExtraValue;
-             case valTypeInt64:
-                if (*(int64_t *)pExtraValue > *(int64_t *)pScanValue)
-                   return *(int64_t *)pMemoryValue > *(int64_t *)pScanValue && *(int64_t *)pMemoryValue < *(int64_t*)pExtraValue;
-                return *(int64_t *)pMemoryValue < *(int64_t *)pScanValue && *(int64_t *)pMemoryValue > *(int64_t *)pExtraValue;
-             case valTypeFloat:
-                if (*(float *)pExtraValue > *(float *)pScanValue)
-                   return *(float *)pMemoryValue > *(float *)pScanValue && *(float *)pMemoryValue < *(float*)pExtraValue;
-                return *(float *)pMemoryValue < *(float *)pScanValue && *(float *)pMemoryValue > *(float *)pExtraValue;
-             case valTypeDouble:
-                if (*(double *)pExtraValue > *(double *)pScanValue)
-                   return *(double *)pMemoryValue > *(double *)pScanValue && *(double *)pMemoryValue < *(double*)pExtraValue;
-                return *(double *)pMemoryValue < *(double *)pScanValue && *(double *)pMemoryValue > *(double *)pExtraValue;
-             case valTypeArrBytes:
-             case valTypeString:
-                return false;
-          }
-       }
-       case cmpTypeIncreasedValue:
-       {
-          switch (valType) {
-             case valTypeUInt8:
-                return *pMemoryValue > *pExtraValue;
-             case valTypeInt8:
-                return *(int8_t *)pMemoryValue > *(int8_t *)pExtraValue;
-             case valTypeUInt16:
-                return *(uint16_t *)pMemoryValue > *(uint16_t *)pExtraValue;
-             case valTypeInt16:
-                return *(int16_t *)pMemoryValue > *(int16_t *)pExtraValue;
-             case valTypeUInt32:
-                return *(uint32_t *)pMemoryValue > *(uint32_t *)pExtraValue;
-             case valTypeInt32:
-                return *(int32_t *)pMemoryValue > *(int32_t *)pExtraValue;
-             case valTypeUInt64:
-                return *(uint64_t *)pMemoryValue > *(uint64_t *)pExtraValue;
-             case valTypeInt64:
-                return *(int64_t *)pMemoryValue > *(int64_t *)pExtraValue;
-             case valTypeFloat:
-                return *(float *)pMemoryValue > *(float *)pExtraValue;
-             case valTypeDouble:
-                return *(double *)pMemoryValue > *(double *)pExtraValue;
-             case valTypeArrBytes:
-             case valTypeString:
-                return false;
-          }
-       }
-       case cmpTypeIncreasedValueBy:
-       {
-          switch (valType) {
-             case valTypeUInt8:
-                return *pMemoryValue == (*pExtraValue + *pScanValue);
-             case valTypeInt8:
-                return *(int8_t *)pMemoryValue == (*(int8_t *)pExtraValue + *(int8_t *)pScanValue);
-             case valTypeUInt16:
-                return *(uint16_t *)pMemoryValue == (*(uint16_t *)pExtraValue + *(uint16_t *)pScanValue);
-             case valTypeInt16:
-                return *(int16_t *)pMemoryValue == (*(int16_t *)pExtraValue + *(int16_t *)pScanValue);
-             case valTypeUInt32:
-                return *(uint32_t *)pMemoryValue == (*(uint32_t *)pExtraValue + *(uint32_t *)pScanValue);
-             case valTypeInt32:
-                return *(int32_t *)pMemoryValue == (*(int32_t *)pExtraValue + *(int32_t *)pScanValue);
-             case valTypeUInt64:
-                return *(uint64_t *)pMemoryValue == (*(uint64_t *)pExtraValue + *(uint64_t *)pScanValue);
-             case valTypeInt64:
-                return *(int64_t *)pMemoryValue == (*(int64_t *)pExtraValue + *(int64_t *)pScanValue);
-             case valTypeFloat:
-                return *(float *)pMemoryValue == (*(float *)pExtraValue + *(float *)pScanValue);
-             case valTypeDouble:
-                return *(double *)pMemoryValue == (*(double *)pExtraValue + *(float *)pScanValue);
-             case valTypeArrBytes:
-             case valTypeString:
-                return false;
-          }
-       }
-       case cmpTypeDecreasedValue:
-       {
-          switch (valType) {
-             case valTypeUInt8:
-                return *pMemoryValue < *pExtraValue;
-             case valTypeInt8:
-                return *(int8_t *)pMemoryValue < *(int8_t *)pExtraValue;
-             case valTypeUInt16:
-                return *(uint16_t *)pMemoryValue < *(uint16_t *)pExtraValue;
-             case valTypeInt16:
-                return *(int16_t *)pMemoryValue < *(int16_t *)pExtraValue;
-             case valTypeUInt32:
-                return *(uint32_t *)pMemoryValue < *(uint32_t *)pExtraValue;
-             case valTypeInt32:
-                return *(int32_t *)pMemoryValue < *(int32_t *)pExtraValue;
-             case valTypeUInt64:
-                return *(uint64_t *)pMemoryValue < *(uint64_t *)pExtraValue;
-             case valTypeInt64:
-                return *(int64_t *)pMemoryValue < *(int64_t *)pExtraValue;
-             case valTypeFloat:
-                return *(float *)pMemoryValue < *(float *)pExtraValue;
-             case valTypeDouble:
-                return *(double *)pMemoryValue < *(double *)pExtraValue;
-             case valTypeArrBytes:
-             case valTypeString:
-                return false;
-          }
-       }
-       case cmpTypeDecreasedValueBy:
-       {
-          switch (valType) {
-             case valTypeUInt8:
-                return *pMemoryValue == (*pExtraValue - *pScanValue);
-             case valTypeInt8:
-                return *(int8_t *)pMemoryValue == (*(int8_t *)pExtraValue - *(int8_t *)pScanValue);
-             case valTypeUInt16:
-                return *(uint16_t *)pMemoryValue == (*(uint16_t *)pExtraValue - *(uint16_t *)pScanValue);
-             case valTypeInt16:
-                return *(int16_t *)pMemoryValue == (*(int16_t *)pExtraValue - *(int16_t *)pScanValue);
-             case valTypeUInt32:
-                return *(uint32_t *)pMemoryValue == (*(uint32_t *)pExtraValue - *(uint32_t *)pScanValue);
-             case valTypeInt32:
-                return *(int32_t *)pMemoryValue == (*(int32_t *)pExtraValue - *(int32_t *)pScanValue);
-             case valTypeUInt64:
-                return *(uint64_t *)pMemoryValue == (*(uint64_t *)pExtraValue - *(uint64_t *)pScanValue);
-             case valTypeInt64:
-                return *(int64_t *)pMemoryValue == (*(int64_t *)pExtraValue - *(int64_t *)pScanValue);
-             case valTypeFloat:
-                return *(float *)pMemoryValue == (*(float *)pExtraValue - *(float *)pScanValue);
-             case valTypeDouble:
-                return *(double *)pMemoryValue == (*(double *)pExtraValue - *(float *)pScanValue);
-             case valTypeArrBytes:
-             case valTypeString:
-                return false;
-          }
-       }
-       case cmpTypeChangedValue:
-       {
-          switch (valType) {
-             case valTypeUInt8:
-                return *pMemoryValue != *pExtraValue;
-             case valTypeInt8:
-                return *(int8_t *)pMemoryValue != *(int8_t *)pExtraValue;
-             case valTypeUInt16:
-                return *(uint16_t *)pMemoryValue != *(uint16_t *)pExtraValue;
-             case valTypeInt16:
-                return *(int16_t *)pMemoryValue != *(int16_t *)pExtraValue;
-             case valTypeUInt32:
-                return *(uint32_t *)pMemoryValue != *(uint32_t *)pExtraValue;
-             case valTypeInt32:
-                return *(int32_t *)pMemoryValue != *(int32_t *)pExtraValue;
-             case valTypeUInt64:
-                return *(uint64_t *)pMemoryValue != *(uint64_t *)pExtraValue;
-             case valTypeInt64:
-                return *(int64_t *)pMemoryValue != *(int64_t *)pExtraValue;
-             case valTypeFloat:
-                return *(float *)pMemoryValue != *(float *)pExtraValue;
-             case valTypeDouble:
-                return *(double *)pMemoryValue != *(double *)pExtraValue;
-             case valTypeArrBytes:
-             case valTypeString:
-                return false;
-          }
-       }
-       case cmpTypeUnchangedValue:
-       {
-          switch (valType) {
-             case valTypeUInt8:
-                return *pMemoryValue == *pExtraValue;
-             case valTypeInt8:
-                return *(int8_t *)pMemoryValue == *(int8_t *)pExtraValue;
-             case valTypeUInt16:
-                return *(uint16_t *)pMemoryValue == *(uint16_t *)pExtraValue;
-             case valTypeInt16:
-                return *(int16_t *)pMemoryValue == *(int16_t *)pExtraValue;
-             case valTypeUInt32:
-                return *(uint32_t *)pMemoryValue == *(uint32_t *)pExtraValue;
-             case valTypeInt32:
-                return *(int32_t *)pMemoryValue == *(int32_t *)pExtraValue;
-             case valTypeUInt64:
-                return *(uint64_t *)pMemoryValue == *(uint64_t *)pExtraValue;
-             case valTypeInt64:
-                return *(int64_t *)pMemoryValue == *(int64_t *)pExtraValue;
-             case valTypeFloat:
-                return *(float *)pMemoryValue == *(float *)pExtraValue;
-             case valTypeDouble:
-                return *(double *)pMemoryValue == *(double *)pExtraValue;
-             case valTypeArrBytes:
-             case valTypeString:
-                return false;
-          }
-       }
-       case cmpTypeUnknownInitialValue:
-       {
-          return true;
-       }
-    }
-    return false;
+int CompareProcScanValues(enum cmd_proc_scan_comparetype cmpType, enum cmd_proc_scan_valuetype valType, size_t valTypeLength, BYTE *pScanValue, BYTE *pMemoryValue, BYTE *pExtraValue) {
+   switch (cmpType) {
+      case cmpTypeExactValue:          return compare_value_exact(pScanValue, pMemoryValue, valTypeLength);
+      case cmpTypeFuzzyValue:          return compare_value_fuzzy(pScanValue, pMemoryValue, valTypeLength);
+      case cmpTypeBiggerThan:          return compare_value_bigger_than(valType, pScanValue, pMemoryValue);
+      case cmpTypeSmallerThan:         return compare_value_smaller_than(valType, pScanValue, pMemoryValue);
+      case cmpTypeValueBetween:        return compare_value_between(valType, pScanValue, pMemoryValue, pExtraValue);
+      case cmpTypeIncreasedValue:      return compare_value_increased(valType, pScanValue, pMemoryValue, pExtraValue);
+      case cmpTypeIncreasedValueBy:    return compare_value_increased_by(valType, pScanValue, pMemoryValue, pExtraValue);
+      case cmpTypeDecreasedValue:      return compare_value_decreased(valType, pScanValue, pMemoryValue, pExtraValue);
+      case cmpTypeDecreasedValueBy:    return compare_value_decreasedy_by(valType, pScanValue, pMemoryValue, pExtraValue);
+      case cmpTypeChangedValue:        return compare_value_changed(valType, pScanValue, pMemoryValue, pExtraValue);
+      case cmpTypeUnchangedValue:      return compare_value_unchanged(valType, pScanValue, pMemoryValue, pExtraValue);
+      case cmpTypeUnknownInitialValue: return TRUE;
+   };
+   
+   return FALSE;
 }
 
 int proc_scan_handle(int fd, struct cmd_packet *packet) {
-    struct cmd_proc_scan_packet *sp = (struct cmd_proc_scan_packet *)packet->data;
+   // Extracting data from the RPC packet
+   struct cmd_proc_scan_packet *sp = (struct cmd_proc_scan_packet *)packet->data;
 
-    if(!sp) {
-        net_send_status(fd, CMD_DATA_NULL);
-       return 1;
-    }
+   // Check if the data pointer is valid
+   if (!sp) {
+      // Send status indicating null data
+      net_send_status(fd, CMD_DATA_NULL);
+      return 1;
+   }
 
-    // get and set data
-    size_t valueLength = proc_scan_getSizeOfValueType(sp->valueType);
-    if (!valueLength) {
-       valueLength = sp->lenData;
-    }
+   // Calculate the length of the value to be scanned
+   size_t valueLength = GetSizeOfProcScanValue(sp->valueType);
+   if (!valueLength) {
+      valueLength = sp->lenData;
+   }
 
-    unsigned char *data = (unsigned char *)pfmalloc(sp->lenData);
-    if (!data) {
-       net_send_status(fd, CMD_DATA_NULL);
-       return 1;
-    }
-    
-    net_send_status(fd, CMD_SUCCESS);
+   // Allocate memory to store received data
+   unsigned char *data = (unsigned char *)pfmalloc(sp->lenData);
+   if (!data) {
+      net_send_status(fd, CMD_DATA_NULL);
+      return 1;
+   }
 
-    net_recv_data(fd, data, sp->lenData, 1);
+   // Notify successful data reception
+   net_send_status(fd, CMD_SUCCESS);
 
-    // query for the process id
-    struct sys_proc_vm_map_args args;
-    memset(&args, NULL, sizeof(struct sys_proc_vm_map_args));
-    if (sys_proc_cmd(sp->pid, SYS_PROC_VM_MAP, &args)) {
-        free(data);
-        net_send_status(fd, CMD_ERROR);
-        return 1;
-    }
+   // Receive data from the network
+   net_recv_data(fd, data, sp->lenData, 1);
 
-    size_t size = args.num * sizeof(struct proc_vm_map_entry);
-    args.maps = (struct proc_vm_map_entry *)pfmalloc(size);
-    if (!args.maps) {
-        free(data);
-        net_send_status(fd, CMD_DATA_NULL);
-        return 1;
-    }
+   // Query for the process ID's memory map
+   struct sys_proc_vm_map_args args;
+   memset(&args, NULL, sizeof(struct sys_proc_vm_map_args));
+   if (sys_proc_cmd(sp->pid, SYS_PROC_VM_MAP, &args)) {
+      free(data);
+      net_send_status(fd, CMD_ERROR);
+      return 1;
+   }
 
-    if (sys_proc_cmd(sp->pid, SYS_PROC_VM_MAP, &args)) {
-        free(args.maps);
-        free(data);
-        net_send_status(fd, CMD_ERROR);
-        return 1;
-    }
+   // Calculate the size of the memory map
+   size_t size = args.num * sizeof(struct proc_vm_map_entry);
+   args.maps = (struct proc_vm_map_entry *)pfmalloc(size);
+   if (!args.maps) {
+      free(data);
+      net_send_status(fd, CMD_DATA_NULL);
+      return 1;
+   }
 
-    net_send_status(fd, CMD_SUCCESS);
+   // Retrieve the process memory map
+   if (sys_proc_cmd(sp->pid, SYS_PROC_VM_MAP, &args)) {
+      free(args.maps);
+      free(data);
+      net_send_status(fd, CMD_ERROR);
+      return 1;
+   }
 
-    uprintf("scan start");
+   // Notify successful memory map retrieval
+   net_send_status(fd, CMD_SUCCESS);
 
-    unsigned char *pExtraValue = valueLength == sp->lenData ? NULL : &data[valueLength];
-    unsigned char *scanBuffer = (unsigned char *)pfmalloc(PAGE_SIZE);
-    for (size_t i = 0; i < args.num; i++) {
-       if ((args.maps[i].prot & PROT_READ) != PROT_READ) {
-            continue;
-       }
+   // Start the scanning process
+   uprintf("scan start");
 
-       uint64_t sectionStartAddr = args.maps[i].start;
-       size_t sectionLen = args.maps[i].end - sectionStartAddr;
+   // Initialize variables for scanning
+   unsigned char *pExtraValue = valueLength == sp->lenData ? NULL : &data[valueLength];
+   unsigned char *scanBuffer = (unsigned char *)pfmalloc(PAGE_SIZE);
+   
+   // Loop through each memory section of the process
+   for (size_t i = 0; i < args.num; i++) {
+      // Skip sections that cannot be read
+      if ((args.maps[i].prot & PROT_READ) != PROT_READ) {
+         continue;
+      }
 
-       // scan
-       for (uint64_t j = 0; j < sectionLen; j += valueLength) {
-            if(j == 0 || !(j % PAGE_SIZE)) {
-                sys_proc_rw(sp->pid, sectionStartAddr, scanBuffer, PAGE_SIZE, 0);
-            }
+      // Calculate section start address and length
+      uint64_t sectionStartAddr = args.maps[i].start;
+      size_t sectionLen = args.maps[i].end - sectionStartAddr;
 
-            uint64_t scanOffset = j % PAGE_SIZE;
-            uint64_t curAddress = sectionStartAddr + j;
-            if (proc_scan_compareValues(sp->compareType, sp->valueType, valueLength, data, scanBuffer + scanOffset, pExtraValue)) {
-                net_send_data(fd, &curAddress, sizeof(uint64_t));
-            }
-       }
-    }
+      // Iterate through the memory section
+      for (uint64_t j = 0; j < sectionLen; j += valueLength) {
+         // If the current offset is at a page boundary, read the next page
+         if (j == 0 || !(j % PAGE_SIZE)) {
+            sys_proc_rw(sp->pid, sectionStartAddr, scanBuffer, PAGE_SIZE, 0);
+         }
 
-    uprintf("scan done");
+         // Calculate the scan offset and current address
+         uint64_t scanOffset = j % PAGE_SIZE;
+         uint64_t curAddress = sectionStartAddr + j;
+         
+         // Compare the scanned value with the requested value
+         if (CompareProcScanValues(
+            sp->compareType, 
+            sp->valueType, 
+            valueLength, 
+            data, 
+            scanBuffer + scanOffset, 
+            pExtraValue)) {
+            // Send the address of a matching memory offset
+            net_send_data(fd, &curAddress, sizeof(uint64_t));
+         }
+      }
+   }
 
-    uint64_t endflag = 0xFFFFFFFFFFFFFFFF;
-    net_send_data(fd, &endflag, sizeof(uint64_t));
+   // Notify the end of the scanning process
+   uprintf("scan done");
 
-    free(scanBuffer);
-    free(args.maps);
-    free(data);
+   // Send an end flag to mark the end of data transmission
+   uint64_t endflag = 0xFFFFFFFFFFFFFFFF;
+   net_send_data(fd, &endflag, sizeof(uint64_t));
 
-    return 0;
+   // Free allocated memory
+   free(scanBuffer);
+   free(args.maps);
+   free(data);
+
+   return 0;
 }
+
 
 int proc_info_handle(int fd, struct cmd_packet *packet) {
     struct cmd_proc_info_packet *ip;
