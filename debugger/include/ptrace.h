@@ -5,9 +5,9 @@
 #ifndef _PTRACE_H
 #define _PTRACE_H
 
-#include <ps4.h>
-#include "sparse.h"
-#include "kdbg.h"
+#include "../../ps4-payload-sdk/include/ps4.h"
+#include "./sparse.h"
+#include "./kdbg.h"
 
 // taken from ptrace.h
 

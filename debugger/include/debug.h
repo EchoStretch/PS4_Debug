@@ -5,10 +5,10 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
-#include <ps4.h>
-#include "protocol.h"
-#include "net.h"
-#include "ptrace.h"
+#include "../../ps4-payload-sdk/include/ps4.h"
+#include "./protocol.h"
+#include "./net.h"
+#include "./ptrace.h"
 
 struct __reg64 {
     uint64_t r_r15;

@@ -5,8 +5,8 @@
 #ifndef _NET_H
 #define _NET_H
 
-#include <ps4.h>
-#include "errno.h"
+#include "../../ps4-payload-sdk/include/ps4.h"
+#include "./errno.h"
 
 #define NET_MAX_LENGTH      8192
 
