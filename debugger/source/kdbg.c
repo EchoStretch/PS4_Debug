@@ -5,10 +5,10 @@
 #include "../include/kdbg.h"
 
 void prefault(void *address, size_t size) {
-    for(uint64_t i = 0; i < size; i++) {
+    for (uint64_t i = 0; i < size; i++) {
         volatile uint8_t c;
         (void)c;
-        
+
         c = ((char *)address)[i];
     }
 }
@@ -19,15 +19,25 @@ void *pfmalloc(size_t size) {
     return p;
 }
 
+void *pfrealloc(void *ptr, size_t size, size_t old_size) {
+    void *p = realloc(ptr, size);
+    if (p == NULL) return NULL;
+
+    if (size > old_size)
+        prefault((char *)p + old_size, size - old_size);
+
+    return p;
+}
+
 void hexdump(void *data, size_t size) {
     unsigned char *p;
     int i;
 
     p = (unsigned char *)data;
 
-    for(i = 0; i < size; i++) {
+    for (i = 0; i < size; i++) {
         uprintf("%02X ", *p++);
-        if(!(i % 16) && i != 0) {
+        if (!(i % 16) && i != 0) {
             uprintf("\n");
         }
     }
