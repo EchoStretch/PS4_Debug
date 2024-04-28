@@ -16,3 +16,6 @@ Developer [ctn123](https://github.com/ctn123) described the console scan feature
 3. **End Flag:** Send back an end flag to mark the completion of data transmission.
 
 Check out [debugger/source/proc.c](https://github.com/a0zhar/PS4DebugV2/blob/9022062adf644a9f63bd490e5db00e96f3dedc3a/debugger/source/proc.c#L352) to view the current implementation of this feature.
+
+### Instructions for using Console Scan
+You need to send the value of 0xBDAA000D to the PS4Debug server if you want it to use the `proc_console_scan_handle` function instead of `proc_scan_handle`
