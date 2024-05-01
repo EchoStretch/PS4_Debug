@@ -412,10 +412,8 @@ int ResizeTheAddrListBuffer(uint64_t **pAddressMem, size_t *pCurrentSz) {
    return 1;
 }
 
-
-// Currently Experimental, POC for replicating ctn123's console scan feature
-// NOTE: haven't tested this yet!
-int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
+// This replaces the previous version! It's console scan recreation
+int proc_scan_handle(int fd, struct cmd_packet *packet) {
    PPROC_SCAN_PKT sp;
    size_t scanValSize;
    PBYTE data;
@@ -588,124 +586,6 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
 }
 
 
-int proc_scan_handle(int fd, struct cmd_packet *packet) {
-   // Extracting data from the RPC packet
-   struct cmd_proc_scan_packet *sp = (struct cmd_proc_scan_packet *)packet->data;
-
-   // Check if the data pointer is valid
-   if (!sp) {
-      // Send status indicating null data
-      net_send_status(fd, CMD_DATA_NULL);
-      return 1;
-   }
-
-   // Calculate the length of the value to be scanned
-   size_t valueLength = GetSizeOfProcScanValue(sp->valueType);
-   if (!valueLength) {
-      valueLength = sp->lenData;
-   }
-
-   // Allocate memory to store received data
-   unsigned char *data = (unsigned char *)pfmalloc(sp->lenData);
-   if (!data) {
-      net_send_status(fd, CMD_DATA_NULL);
-      return 1;
-   }
-
-   // Notify successful data reception
-   net_send_status(fd, CMD_SUCCESS);
-
-   // Receive data from the network
-   net_recv_data(fd, data, sp->lenData, 1);
-
-   // Query for the process ID's memory map
-   struct sys_proc_vm_map_args args;
-   memset(&args, NULL, sizeof(struct sys_proc_vm_map_args));
-   if (sys_proc_cmd(sp->pid, SYS_PROC_VM_MAP, &args)) {
-      free(data);
-      net_send_status(fd, CMD_ERROR);
-      return 1;
-   }
-
-   // Calculate the size of the memory map
-   size_t size = args.num * sizeof(struct proc_vm_map_entry);
-   args.maps = (struct proc_vm_map_entry *)pfmalloc(size);
-   if (!args.maps) {
-      free(data);
-      net_send_status(fd, CMD_DATA_NULL);
-      return 1;
-   }
-
-   // Retrieve the process memory map
-   if (sys_proc_cmd(sp->pid, SYS_PROC_VM_MAP, &args)) {
-      free(args.maps);
-      free(data);
-      net_send_status(fd, CMD_ERROR);
-      return 1;
-   }
-
-   // Notify successful memory map retrieval
-   net_send_status(fd, CMD_SUCCESS);
-
-   // Start the scanning process
-   uprintf("scan start");
-
-   // Initialize variables for scanning
-   unsigned char *pExtraValue = valueLength == sp->lenData ? NULL : &data[valueLength];
-   unsigned char *scanBuffer = (unsigned char *)pfmalloc(PAGE_SIZE);
-
-   // Loop through each memory section of the process
-   for (size_t i = 0; i < args.num; i++) {
-      // Skip sections that cannot be read
-      if ((args.maps[i].prot & PROT_READ) != PROT_READ) {
-         continue;
-      }
-
-      // Calculate section start address and length
-      uint64_t sectionStartAddr = args.maps[i].start;
-      size_t sectionLen = args.maps[i].end - sectionStartAddr;
-
-      // Iterate through the memory section
-      for (uint64_t j = 0; j < sectionLen; j += valueLength) {
-         // If the current offset is at a page boundary, read the next page
-         if (j == 0 || !(j % PAGE_SIZE)) {
-            sys_proc_rw(sp->pid, sectionStartAddr, scanBuffer, PAGE_SIZE, 0);
-         }
-
-         // Calculate the scan offset and current address
-         uint64_t scanOffset = j % PAGE_SIZE;
-         uint64_t curAddress = sectionStartAddr + j;
-
-         // Compare the scanned value with the requested value
-         if (CompareProcScanValues(
-            sp->compareType,
-            sp->valueType,
-            valueLength,
-            data,
-            scanBuffer + scanOffset,
-            pExtraValue)) {
-            // Send the address of a matching memory offset
-            net_send_data(fd, &curAddress, sizeof(uint64_t));
-         }
-      }
-   }
-
-   // Notify the end of the scanning process
-   uprintf("scan done");
-
-   // Send an end flag to mark the end of data transmission
-   uint64_t endflag = 0xFFFFFFFFFFFFFFFF;
-   net_send_data(fd, &endflag, sizeof(uint64_t));
-
-   // Free allocated memory
-   free(scanBuffer);
-   free(args.maps);
-   free(data);
-
-   return 0;
-}
-
-
 int proc_info_handle(int fd, struct cmd_packet *packet) {
    struct cmd_proc_info_packet *ip;
    struct sys_proc_info_args args;
@@ -785,11 +665,10 @@ int proc_handle(int fd, struct cmd_packet *packet) {
       case CMD_PROC_CALL:         return proc_call_handle(fd, packet);
       case CMD_PROC_ELF:          return proc_elf_handle(fd, packet);
       case CMD_PROC_PROTECT:      return proc_protect_handle(fd, packet);
-      case CMD_PROC_SCAN:         return proc_console_scan_handle(fd, packet);
+      case CMD_PROC_SCAN:         return proc_scan_handle(fd, packet);
       case CMD_PROC_INFO:         return proc_info_handle(fd, packet);
       case CMD_PROC_ALLOC:        return proc_alloc_handle(fd, packet);
       case CMD_PROC_FREE:         return proc_free_handle(fd, packet);
-      case CMD_PROC_CONSOLE_SCAN: return proc_console_scan_handle(fd, packet);
       default: return -1;
    };
 }
