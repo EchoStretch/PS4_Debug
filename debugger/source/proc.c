@@ -361,7 +361,57 @@ typedef struct cmd_proc_scan_packet PROC_SCAN_PKT_T, *PPROC_SCAN_PKT;
 typedef unsigned char *PBYTE;
 
 // The Default maximum number of addresses 10000
-#define MAX_ADDRESS_COUNT 10000
+#define INIT_MAX_ADDR_COUNT 10000
+
+// A Helper function for the Console based scanning function which is
+// used to ensure that no unused and unessecary memory is allocated 
+// for the list of valid addresses. Basically this function is used to
+// ensure that we dont hold any memory we dont use (not 2 be wasteful).
+int release_unused_addr_list_memory(uint64_t **ptrAddrList, size_t addrCount, size_t totalSz) {
+    // Calculate the minimum memory size needed for our address list
+    // buffer to be able to contain <addrCount> number of uint64_t 
+    // address values
+   size_t min_mem_size = addrCount * sizeof(uint64_t);
+
+   // Attempt to resize the address list, using the calculated size
+   // and check if pfrealloc returned error, and handle it
+   uint64_t *new_resized_mem = (uint64_t *)pfrealloc(
+      *ptrAddrList, // pointer to memory of our <valid_addresses>
+      min_mem_size, // minimum needed size
+      totalSz       // current size of the allocated memory
+   );
+   if (new_resized_mem == NULL)
+      return -1;
+
+    // If pfrealloc doesn't fail, assign the new resized memory to
+    // the <ptrAddrList> variable, and return success code
+   *ptrAddrList = new_resized_mem;
+   return 1;
+}
+
+// Helper function for the console based scan, which will resize the
+// buffer containing the addresses using the initial size  
+int ResizeTheAddrListBuffer(uint64_t **pAddressMem, size_t *pCurrentSz) {
+   // Check if the provided buffer is invalid, and handle it
+   if (*pAddressMem == NULL) return -1;
+
+   // Calculate the new memory size first calculating the size used when 
+   // initially allocating array of uint64_t addresses
+   size_t new_size = *pCurrentSz + (INIT_MAX_ADDR_COUNT * sizeof(uint64_t));
+
+      // Resize the memory, and return error code if pfrealloc fails
+   uint64_t *new_resized_mem = (uint64_t *)pfrealloc(*pAddressMem, new_size, *pCurrentSz);
+   if (new_resized_mem == NULL)
+      return -1;
+
+   // Otherwise, we assign the pointer to the expanded memory to the
+   // address collection buffer, update the current size variable and 
+   // return success code
+   *pAddressMem = new_resized_mem;
+   *pCurrentSz = new_size;
+   return 1;
+}
+
 
 // Currently Experimental, POC for replicating ctn123's console scan feature
 // NOTE: haven't tested this yet!
@@ -437,9 +487,15 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
       return 1;
    }
 
-   // Allocate memory to hold <MAX_ADDRESS_COUNT> number of offsets
-   uint64_t *valid_addresses = (uint64_t *)pfmalloc(MAX_ADDRESS_COUNT * sizeof(uint64_t));
-   if (!valid_addresses) {
+   // Counter used to increase the <valid_addresses> current array index
+   // everytime a valid address is found
+   size_t addressCount = 0;
+
+   size_t init_memSize = INIT_MAX_ADDR_COUNT * sizeof(uint64_t);
+
+   // Allocate memory to hold <INIT_MAX_ADDR_COUNT> number of offsets
+   uint64_t *valid_addresses = (uint64_t *)pfmalloc(init_memSize);
+   if (valid_addresses == NULL) {
       free(scanBuffer);
       free(args.maps);
       free(data);
@@ -447,16 +503,11 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
       return 1;
    }
 
-   // Counter used to increase the <valid_addresses> current array index
-   // everytime a valid address is found
-   size_t addressCount = 0;
-
    // Loop through each memory section of the process
    for (size_t i = 0; i < args.num; i++) {
       // Skip sections that cannot be read
       if ((args.maps[i].prot & PROT_READ) != PROT_READ)
          continue;
-
 
       // Calculate section start address and length
       uint64_t sectionStartAddr = args.maps[i].start;
@@ -466,20 +517,14 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
       for (uint64_t j = 0; j < sectionLen; j += scanValSize) {
          // If the current offset is at a page boundary, read the next page
          if (j == 0 || !(j % PAGE_SIZE)) {
-            sys_proc_rw(
-               sp->pid,
-               sectionStartAddr,
-               scanBuffer,
-               PAGE_SIZE,
-               0
-            );
+            sys_proc_rw(sp->pid, sectionStartAddr, scanBuffer, PAGE_SIZE, 0);
          }
 
          // Calculate the scan offset and current address
          uint64_t scanOffset = j % PAGE_SIZE;
          uint64_t curAddress = sectionStartAddr + j;
 
-         // Compare the scanned value with the requested value
+         // Run Comparison on the found value
          if (CompareProcScanValues(
             sp->compareType,
             sp->valueType,
@@ -488,16 +533,15 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
             scanBuffer + scanOffset,
             pExtraValue)) {
 
-            // Check if the addressCount exceeds MAX_ADDRESS_COUNT, meaning the memory needs
-            // to be resized using pfrealloc
-            if (addressCount + 1 >= MAX_ADDRESS_COUNT || addressCount == MAX_ADDRESS_COUNT) {
-               size_t oldSize = MAX_ADDRESS_COUNT * sizeof(uint64_t);
-               size_t newSize = 2 * oldSize;
-
-               // Resize the valid_addresses array, and make sure to check if pfrealloc
-               // failed or not
-               uint64_t *new_valid_addresses = (uint64_t *)pfrealloc(valid_addresses, newSize, oldSize);
-               if (new_valid_addresses == NULL) {
+            // First before appending the new address to the address collection
+            // we check if the current index in <valid_addresses> is equal to or
+            // will be equal to/greater than <INIT_MAX_ADDR_COUNT>, and if true
+            // we try to resize <valid_addresses> to be able to hold 
+            // <INIT_MAX_ADDR_COUNT> additional addresses 
+            if (addressCount + 1 >= INIT_MAX_ADDR_COUNT || addressCount == INIT_MAX_ADDR_COUNT) {
+              // Attempt to resize <valid_addresses> and check if the helper
+              // function returns error code, and if true, handle it
+               if (ResizeTheAddrListBuffer(&valid_addresses, &init_memSize) == -1) {
                   free(scanBuffer);
                   free(args.maps);
                   free(data);
@@ -505,27 +549,26 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
                   net_send_status(fd, CMD_DATA_NULL);
                   return 1;
                }
-
-               // Assign valid_addresses the resized memory
-               valid_addresses = new_valid_addresses;
             }
 
-           // Append the new valid address to the buffer
+            // Append the new found address to the <valid_addresses> then
+            // we increment <addressCount> by 1 afterwards
             valid_addresses[addressCount++] = curAddress;
          }
       }
    }
+
+   //
+   // TODO: implement use of release_unused_addr_list_memory() to free any memory 
+   // which is unused by the valid_addresses
+   //
 
    // Now we enter a for-loop, so that we can send back each and every individual
    // memory address that we saved to the <valid_addresses> array during the 
    // process scanning process, back to the PC
    for (size_t i = 0; i < addressCount; i++) {
       // Send the Offset back to the PC
-      net_send_data(
-         fd,
-         &valid_addresses[i],
-         sizeof(uint64_t)
-      );
+      net_send_data(fd, &valid_addresses[i], sizeof(uint64_t));
    }
 
    // Notify the end of the scanning process
