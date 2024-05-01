@@ -1,23 +1,29 @@
 #include "../include/compare.h"
+#define FUZZY_TOLERANCE 1.0
 
 int compare_value_exact(BYTE *pScanValue, BYTE *pMemoryValue, size_t valTypeLength) {
-    int isFound = FALSE;
-    for (size_t j = 0; j < valTypeLength - 1; j++) {
-        isFound = (pScanValue[j] == pMemoryValue[j]);
-        if (!isFound)
-            break;
-    }
-
-    return isFound;
+    return memcmp(pScanValue, pMemoryValue, valTypeLength) == 0;
 }
+
+// int compare_value_exact(BYTE *pScanValue, BYTE *pMemoryValue, size_t valTypeLength) {
+//     int isFound = FALSE;
+//     for (size_t j = 0; j < valTypeLength - 1; j++) {
+//         isFound = (pScanValue[j] == pMemoryValue[j]);
+//         if (!isFound)
+//             break;
+//     }
+// 
+//     return isFound;
+// }
 
 int compare_value_fuzzy(enum cmd_proc_scan_valuetype valType, BYTE *pScanValue, BYTE *pMemoryValue) {
     if (valType == valTypeFloat) {
         float diff = *(float *)pScanValue - *(float *)pMemoryValue;
-        return diff < 1.0f && diff > -1.0f;
-    } else if (valType == valTypeDouble) {
+        return diff < FUZZY_TOLERANCE && diff > -FUZZY_TOLERANCE;
+    }
+    else if (valType == valTypeDouble) {
         double diff = *(double *)pScanValue - *(double *)pMemoryValue;
-        return diff < 1.0 && diff > -1.0;
+        return diff < FUZZY_TOLERANCE && diff > -FUZZY_TOLERANCE;
     }
 
     return FALSE;
