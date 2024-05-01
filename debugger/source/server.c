@@ -68,10 +68,8 @@ int check_debug_interrupt() {
     int signal;
     int r;
 
-    r = wait4(curdbgctx->pid, &status, WNOHANG, NULL);
-    if (!r) {
+    if (!wait4(curdbgctx->pid, &status, WNOHANG, NULL)) 
         return 0;
-    }
 
     signal = WSTOPSIG(status);
     uprintf("check_debug_interrupt signal %i", signal);
@@ -97,8 +95,7 @@ int check_debug_interrupt() {
     }
 
     // grab interrupt data
-    r = ptrace(PT_LWPINFO, curdbgctx->pid, lwpinfo, sizeof(struct ptrace_lwpinfo));
-    if (r) {
+    if (ptrace(PT_LWPINFO, curdbgctx->pid, lwpinfo, sizeof(struct ptrace_lwpinfo))) {
         uprintf("could not get lwpinfo errno %i", errno);
     }
 
@@ -110,21 +107,17 @@ int check_debug_interrupt() {
     // TODO: fix size mismatch with these fields
     // resp.tdname is tdname[40]
     // lwpinfo->pl_tdname is pl_tdname[24]
-
     memcpy(resp.tdname, lwpinfo->pl_tdname, sizeof(lwpinfo->pl_tdname));
 
-    r = ptrace(PT_GETREGS, resp.lwpid, &resp.reg64, NULL);
-    if (r) {
+    if (ptrace(PT_GETREGS, resp.lwpid, &resp.reg64, NULL)) {
         uprintf("could not get registers errno %i", errno);
     }
 
-    r = ptrace(PT_GETFPREGS, resp.lwpid, &resp.savefpu, NULL);
-    if (r) {
+    if (ptrace(PT_GETFPREGS, resp.lwpid, &resp.savefpu, NULL)) {
         uprintf("could not get float registers errno %i", errno);
     }
 
-    r = ptrace(PT_GETDBREGS, resp.lwpid, &resp.dbreg64, NULL);
-    if (r) {
+    if (ptrace(PT_GETDBREGS, resp.lwpid, &resp.dbreg64, NULL)) {
         uprintf("could not get debug registers errno %i", errno);
     }
 
