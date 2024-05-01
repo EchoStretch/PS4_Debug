@@ -502,7 +502,7 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
       net_send_status(fd, CMD_DATA_NULL);
       return 1;
    }
-
+   
    // Loop through each memory section of the process
    for (size_t i = 0; i < args.num; i++) {
       // Skip sections that cannot be read
