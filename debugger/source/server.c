@@ -369,80 +369,103 @@ void *broadcast_thread(void *arg) {
     return NULL;
 }
 
+//
+// Function responsible for initializing, and starting the PS4Debug Server
 int start_server() {
-    struct sockaddr_in server;
-    struct sockaddr_in client;
-    struct server_client *svc;
-    unsigned int len = sizeof(client);
-    int serv, fd;
-    int r;
+    struct sockaddr_in server; // Structure for server address
+    struct sockaddr_in client; // Structure for client address
+    struct server_client *svc; // Pointer to structure for server-client communication
+    unsigned int len = sizeof(client); // Size of client address structure
+    int serv; // Server socket file descriptor
+    int fd; // Client socket file descriptor
+    int r; // Generic return value holder
 
+    // Print server start message
     uprintf("ps4debug " PACKET_VERSION " server started");
 
+    // Create broadcast thread
     ScePthread broadcast;
     scePthreadCreate(&broadcast, NULL, broadcast_thread, NULL, "broadcast");
 
-    // server structure
+    // Initialize server address structure
     server.sin_len = sizeof(server);
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = IN_ADDR_ANY;
     server.sin_port = sceNetHtons(SERVER_PORT);
+
+    // Clear padding in address structure
     memset(server.sin_zero, NULL, sizeof(server.sin_zero));
 
-    // start up server
+    // Create server socket, then check if the socket creation 
+    // failed, and if so handle the error
     serv = sceNetSocket("debugserver", AF_INET, SOCK_STREAM, 0);
-    if(serv < 0) {
+    if (serv < 0) {
         uprintf("could not create socket!");
         return 1;
     }
 
+    // Configure server socket
     configure_socket(serv);
 
-    r = sceNetBind(serv, (struct sockaddr *)&server, sizeof(server));
-    if(r) {
+    // Bind server socket to address
+    if (sceNetBind(serv, (struct sockaddr *)&server, sizeof(server))) {
         uprintf("bind failed!");
         return 1;
     }
 
-    r = sceNetListen(serv, SERVER_MAXCLIENTS * 2);
-    if(r) {
+    // Listen for incoming connections
+    if (sceNetListen(serv, SERVER_MAXCLIENTS * 2)) {
         uprintf("bind failed!");
         return 1;
     }
 
-    // reset clients
+    // Reset client structures
     memset(servclients, NULL, sizeof(struct server_client) * SERVER_MAXCLIENTS);
 
-    // reset debugging stuff
+    // Reset debugging variables
     g_debugging = 0;
     curdbgcli = NULL;
     curdbgctx = NULL;
 
-    while(1) {
+    // Main server loop
+    while (1) {
+        // TODO: Comment this line
         scePthreadYield();
 
         errno = NULL;
-        fd = sceNetAccept(serv, (struct sockaddr *)&client, &len);
-        if(fd > -1 && !errno) {
-            uprintf("accepted a new client");
 
-            svc = alloc_client();
-            if(!svc) {
+        // Accept incoming connection, and check if a connection was has
+        // successfully accepted 
+        fd = sceNetAccept(serv, (struct sockaddr *)&client, &len);
+        if (fd > -1 && !errno) { 
+            uprintf("accepted a new client");
+            
+            // TODO: Comment this part
+            svc = alloc_client(); 
+            if (!svc) {
                 uprintf("server can not accept anymore clients");
                 continue;
             }
 
+            // TODO: Fully comment this part!
+            // Configure ? socket
             configure_socket(fd);
 
             svc->fd = fd;
             svc->debugging = 0;
+            
+            // Copy client address to client structure
             memcpy(&svc->client, &client, sizeof(svc->client));
+            
+            // Clear debugging context
             memset(&svc->dbgctx, NULL, sizeof(svc->dbgctx));
 
+            // Create client handler thread
             ScePthread thread;
-            scePthreadCreate(&thread, NULL, (void * (*)(void *))handle_client, (void *)svc, "clienthandler");
+            scePthreadCreate(&thread, NULL, (void *(*)(void *))handle_client, (void *)svc, "clienthandler");
         }
 
+        // Sleep for 2 ticks
         sceKernelSleep(2);
     }
 
