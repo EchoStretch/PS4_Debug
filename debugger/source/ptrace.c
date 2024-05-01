@@ -5,15 +5,12 @@
 #include "../include/ptrace.h"
 
 int ptrace(int req, int pid, void *addr, int data) {
-    int r;
-
     errno = NULL;
     
-    r = syscall(26, req, pid, addr, data);
-
-    //uprintf("ptrace(req %i, pid %i, addr 0x%llX, data 0x%X) = %i (errno %i)", req, pid, addr, data, r, errno);
-
-    return r;
+    int result = syscall(26, req, pid, addr, data);
+    // uprintf("ptrace(req %i, pid %i, addr 0x%llX, data 0x%X) = %i (errno %i)", req, pid, addr, data, r, errno);
+    
+    return result;
 }
 
 int wait4(int wpid, int *status, int options, void *rusage) {
