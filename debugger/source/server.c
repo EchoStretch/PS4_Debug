@@ -7,8 +7,8 @@
 struct server_client servclients[SERVER_MAXCLIENTS];
 
 struct server_client *alloc_client() {
-    for(int i = 0; i < SERVER_MAXCLIENTS; i++) {
-        if(servclients[i].id == 0) {
+    for (int i = 0; i < SERVER_MAXCLIENTS; i++) {
+        if (servclients[i].id == 0) {
             servclients[i].id = i + 1;
             return &servclients[i];
         }
@@ -21,7 +21,7 @@ void free_client(struct server_client *svc) {
     svc->id = 0;
     sceNetSocketClose(svc->fd);
 
-    if(svc->debugging) {
+    if (svc->debugging) {
         debug_cleanup(&svc->dbgctx);
     }
 
@@ -42,17 +42,17 @@ int cmd_handler(int fd, struct cmd_packet *packet) {
 
     uprintf("cmd_handler %X", packet->cmd);
 
-    if(packet->cmd == CMD_VERSION) {
+    if (packet->cmd == CMD_VERSION) {
         return handle_version(fd, packet);
     }
 
-    if(VALID_PROC_CMD(packet->cmd)) {
+    if (VALID_PROC_CMD(packet->cmd)) {
         return proc_handle(fd, packet);
-    } else if(VALID_DEBUG_CMD(packet->cmd)) {
+    } else if (VALID_DEBUG_CMD(packet->cmd)) {
         return debug_handle(fd, packet);
-    } else if(VALID_KERN_CMD(packet->cmd)) {
+    } else if (VALID_KERN_CMD(packet->cmd)) {
         return kern_handle(fd, packet);
-    } else if(VALID_CONSOLE_CMD(packet->cmd)) {
+    } else if (VALID_CONSOLE_CMD(packet->cmd)) {
         return console_handle(fd, packet);
     }
 
@@ -69,17 +69,17 @@ int check_debug_interrupt() {
     int r;
 
     r = wait4(curdbgctx->pid, &status, WNOHANG, NULL);
-    if(!r) {
+    if (!r) {
         return 0;
     }
 
     signal = WSTOPSIG(status);
     uprintf("check_debug_interrupt signal %i", signal);
 
-    if(signal == SIGSTOP) {
+    if (signal == SIGSTOP) {
         uprintf("passed on a SIGSTOP");
         return 0;
-    } else if(signal == SIGKILL) {
+    } else if (signal == SIGKILL) {
         debug_cleanup(curdbgctx);
 
         // the process will die
@@ -91,14 +91,14 @@ int check_debug_interrupt() {
 
     // If lwpinfo is on the stack it fails, maybe I should patch ptrace? idk
     lwpinfo = (struct ptrace_lwpinfo *)pfmalloc(sizeof(struct ptrace_lwpinfo));
-    if(!lwpinfo) {
+    if (!lwpinfo) {
         uprintf("could not allocate memory for thread information");
         return 1;
     }
 
     // grab interrupt data
     r = ptrace(PT_LWPINFO, curdbgctx->pid, lwpinfo, sizeof(struct ptrace_lwpinfo));
-    if(r) {
+    if (r) {
         uprintf("could not get lwpinfo errno %i", errno);
     }
 
@@ -108,33 +108,36 @@ int check_debug_interrupt() {
     resp.status = status;
 
     // TODO: fix size mismatch with these fields
+    // resp.tdname is tdname[40]
+    // lwpinfo->pl_tdname is pl_tdname[24]
+
     memcpy(resp.tdname, lwpinfo->pl_tdname, sizeof(lwpinfo->pl_tdname));
 
     r = ptrace(PT_GETREGS, resp.lwpid, &resp.reg64, NULL);
-    if(r) {
+    if (r) {
         uprintf("could not get registers errno %i", errno);
     }
 
     r = ptrace(PT_GETFPREGS, resp.lwpid, &resp.savefpu, NULL);
-    if(r) {
+    if (r) {
         uprintf("could not get float registers errno %i", errno);
     }
-    
+
     r = ptrace(PT_GETDBREGS, resp.lwpid, &resp.dbreg64, NULL);
-    if(r) {
+    if (r) {
         uprintf("could not get debug registers errno %i", errno);
     }
 
     // if it is a software breakpoint we need to handle it accordingly
     breakpoint = NULL;
-    for(int i = 0; i < MAX_BREAKPOINTS; i++) {
-        if(curdbgctx->breakpoints[i].address == resp.reg64.r_rip - 1) {
+    for (int i = 0; i < MAX_BREAKPOINTS; i++) {
+        if (curdbgctx->breakpoints[i].address == resp.reg64.r_rip - 1) {
             breakpoint = &curdbgctx->breakpoints[i];
             break;
         }
     }
 
-    if(breakpoint) {
+    if (breakpoint) {
         uprintf("dealing with software breakpoint");
         uprintf("breakpoint: %llX %X", breakpoint->address, breakpoint->original);
 
@@ -147,7 +150,7 @@ int check_debug_interrupt() {
 
         // single step over the instruction
         ptrace(PT_STEP, resp.lwpid, (void *)1, NULL);
-        while(!wait4(curdbgctx->pid, &status, WNOHANG, NULL)) {
+        while (!wait4(curdbgctx->pid, &status, WNOHANG, NULL)) {
             sceKernelUsleep(4000);
         }
 
@@ -161,7 +164,7 @@ int check_debug_interrupt() {
     }
 
     r = net_send_data(curdbgctx->dbgfd, &resp, DEBUG_INTERRUPT_PACKET_SIZE);
-    if(r != DEBUG_INTERRUPT_PACKET_SIZE) {
+    if (r != DEBUG_INTERRUPT_PACKET_SIZE) {
         uprintf("net_send_data failed %i %i", r, errno);
     }
 
@@ -187,7 +190,7 @@ int handle_client(struct server_client *svc) {
     memset(&tv, NULL, sizeof(tv));
     tv.tv_usec = 1000;
 
-    while(1) {
+    while (1) {
         // do a select
         fd_set sfd;
         FD_ZERO(&sfd);
@@ -196,7 +199,7 @@ int handle_client(struct server_client *svc) {
         net_select(FD_SETSIZE, &sfd, NULL, NULL, &tv);
 
         // check if we can recieve
-        if(FD_ISSET(fd, &sfd)) {
+        if (FD_ISSET(fd, &sfd)) {
             // zero out
             memset(&packet, NULL, CMD_PACKET_SIZE);
 
@@ -215,8 +218,8 @@ int handle_client(struct server_client *svc) {
         } else {
             // if we have a valid debugger context then check for interrupt
             // this does not block, as wait is called with option WNOHANG
-            if(svc->debugging) {
-                if(check_debug_interrupt()) {
+            if (svc->debugging) {
+                if (check_debug_interrupt()) {
                     goto error;
                 }
             }
@@ -268,7 +271,7 @@ int handle_client(struct server_client *svc) {
 
         // special case when attaching
         // if we are debugging then the handler for CMD_DEBUG_ATTACH will send back the right error
-        if(!g_debugging && packet.cmd == CMD_DEBUG_ATTACH) {
+        if (!g_debugging && packet.cmd == CMD_DEBUG_ATTACH) {
             curdbgcli = svc;
             curdbgctx = &svc->dbgctx;
         }
@@ -287,7 +290,7 @@ int handle_client(struct server_client *svc) {
         }
     }
 
-error:
+    error:
     uprintf("client disconnected");
     free_client(svc);
 
@@ -326,7 +329,7 @@ void *broadcast_thread(void *arg) {
     memset(server.sin_zero, NULL, sizeof(server.sin_zero));
 
     serv = sceNetSocket("broadsock", AF_INET, SOCK_DGRAM, 0);
-    if(serv < 0) {
+    if (serv < 0) {
         uprintf("failed to create broadcast server");
         return NULL;
     }
@@ -335,11 +338,11 @@ void *broadcast_thread(void *arg) {
     sceNetSetsockopt(serv, SOL_SOCKET, SO_BROADCAST, (char *)&flag, sizeof(flag));
 
     r = sceNetBind(serv, (struct sockaddr *)&server, sizeof(server));
-    if(r) {
+    if (r) {
         uprintf("failed to bind broadcast server");
         return NULL;
     }
-    
+
     // TODO: XXX: clean this up, but meh not too dirty? is it? hmmm
     int libNet = sceKernelLoadStartModule("libSceNet.sprx", 0, NULL, 0, 0, 0);
     int (*sceNetRecvfrom)(int s, void *buf, unsigned int len, int flags, struct sockaddr *from, unsigned int *fromlen);
@@ -347,16 +350,16 @@ void *broadcast_thread(void *arg) {
     RESOLVE(libNet, sceNetRecvfrom);
     RESOLVE(libNet, sceNetSendto);
 
-    while(1) {
+    while (1) {
         scePthreadYield();
 
         magic = 0;
         clisize = sizeof(client);
         r = sceNetRecvfrom(serv, &magic, sizeof(uint32_t), 0, (struct sockaddr *)&client, &clisize);
 
-        if(r >= 0) {
+        if (r >= 0) {
             uprintf("broadcast server received a message");
-            if(magic == BROADCAST_MAGIC) {
+            if (magic == BROADCAST_MAGIC) {
                 sceNetSendto(serv, &magic, sizeof(uint32_t), 0, (struct sockaddr *)&client, clisize);
             }
         } else {
@@ -437,11 +440,11 @@ int start_server() {
         // Accept incoming connection, and check if a connection was has
         // successfully accepted 
         fd = sceNetAccept(serv, (struct sockaddr *)&client, &len);
-        if (fd > -1 && !errno) { 
+        if (fd > -1 && !errno) {
             uprintf("accepted a new client");
-            
+
             // TODO: Comment this part
-            svc = alloc_client(); 
+            svc = alloc_client();
             if (!svc) {
                 uprintf("server can not accept anymore clients");
                 continue;
@@ -453,10 +456,10 @@ int start_server() {
 
             svc->fd = fd;
             svc->debugging = 0;
-            
+
             // Copy client address to client structure
             memcpy(&svc->client, &client, sizeof(svc->client));
-            
+
             // Clear debugging context
             memset(&svc->dbgctx, NULL, sizeof(svc->dbgctx));
 
