@@ -784,7 +784,7 @@ int proc_handle(int fd, struct cmd_packet *packet) {
       case CMD_PROC_CALL:         return proc_call_handle(fd, packet);
       case CMD_PROC_ELF:          return proc_elf_handle(fd, packet);
       case CMD_PROC_PROTECT:      return proc_protect_handle(fd, packet);
-      case CMD_PROC_SCAN:         return proc_scan_handle(fd, packet);
+      case CMD_PROC_SCAN:         return proc_console_scan_handle(fd, packet);
       case CMD_PROC_INFO:         return proc_info_handle(fd, packet);
       case CMD_PROC_ALLOC:        return proc_alloc_handle(fd, packet);
       case CMD_PROC_FREE:         return proc_free_handle(fd, packet);
