@@ -561,8 +561,11 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
    //
    // TODO: implement use of release_unused_addr_list_memory() to free any memory 
    // which is unused by the valid_addresses
-   //
+   // 
 
+   // Notify the end of the scanning process
+   uprintf("scan done");
+   
    // Now we enter a for-loop, so that we can send back each and every individual
    // memory address that we saved to the <valid_addresses> array during the 
    // process scanning process, back to the PC
@@ -570,9 +573,6 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
       // Send the Offset back to the PC
       net_send_data(fd, &valid_addresses[i], sizeof(uint64_t));
    }
-
-   // Notify the end of the scanning process
-   uprintf("scan done");
 
    // Send an end flag to mark the end of data transmission
    uint64_t endflag = 0xFFFFFFFFFFFFFFFF;
@@ -586,6 +586,7 @@ int proc_console_scan_handle(int fd, struct cmd_packet *packet) {
 
    return 0;
 }
+
 
 int proc_scan_handle(int fd, struct cmd_packet *packet) {
    // Extracting data from the RPC packet
