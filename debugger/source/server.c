@@ -365,7 +365,6 @@ void *broadcast_thread(void *arg) {
     return NULL;
 }
 
-//
 // Function responsible for initializing, and starting the PS4Debug Server
 int start_server() {
     struct sockaddr_in server; // Structure for server address
