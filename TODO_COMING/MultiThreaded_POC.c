@@ -43,6 +43,7 @@ void *ThreadFunctionScanProcSection(void *arg) {
         free(scanArguments->processMaps);
         free(scanArguments->data);
         net_send_status(scanArguments->fd, CMD_DATA_NULL);
+        free(scanArguments);
         return NULL;
     }
 
@@ -84,6 +85,7 @@ void *ThreadFunctionScanProcSection(void *arg) {
                     free(scanArguments->data);
                     free(valid_addresses);
                     net_send_status(scanArguments->fd, CMD_DATA_NULL);
+                    free(scanArguments);
                     return NULL;
                 }
             }
@@ -99,10 +101,9 @@ void *ThreadFunctionScanProcSection(void *arg) {
     // TO THE GLOBALLY USED ADDRESS LIST VARIABLE HERE
     //
 
-
     // Free allocated memory
     free(valid_addresses);
-
+    free(scanArguments);     
     return NULL;
 }
 
