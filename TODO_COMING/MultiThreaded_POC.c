@@ -106,14 +106,16 @@ void *ThreadFunctionScanProcSection(void *arg) {
     return NULL;
 }
 
+
+// This replaces the previous version! It's console scan recreation
 int proc_scan_handle(int fd, struct cmd_packet *packet) {
-    struct cmd_proc_scan_packet* sp;
+    struct cmd_proc_scan_packet *sp;
     size_t scanValSize;
-    unsigned char* data;
+    unsigned char *data;
 
     // Extract the data from the RPC packet, and check if the data 
     // pointer isn't valid, and return early if so
-    if (!(sp = (struct cmd_proc_scan_packet*)packet->data)) {
+    if (!(sp = (struct cmd_proc_scan_packet *)packet->data)) {
        // Send status indicating null data
         net_send_status(fd, CMD_DATA_NULL);
         return 1;
@@ -123,8 +125,9 @@ int proc_scan_handle(int fd, struct cmd_packet *packet) {
     if (!(scanValSize = GetSizeOfProcScanValue(sp->valueType)))
         scanValSize = sp->lenData;
 
+
      // Allocate memory to store received data
-    if ((data = (unsigned char*)pfmalloc(sp->lenData)) == NULL) {
+    if ((data = (unsigned char *)pfmalloc(sp->lenData)) == NULL) {
         net_send_status(fd, CMD_DATA_NULL);
         return 1;
     }
@@ -169,6 +172,13 @@ int proc_scan_handle(int fd, struct cmd_packet *packet) {
 
     // Initialize variables for scanning
     unsigned char *pExtraValue = scanValSize == sp->lenData ? NULL : &data[scanValSize];
+    unsigned char *scanBuffer = (unsigned char *)pfmalloc(PAGE_SIZE);
+    if (scanBuffer == NULL) {
+        free(args.maps);
+        free(data);
+        net_send_status(fd, CMD_DATA_NULL);
+        return 1;
+    }
 
     // Counter used to increase the <valid_addresses> current array index
     // everytime a valid address is found
@@ -179,14 +189,15 @@ int proc_scan_handle(int fd, struct cmd_packet *packet) {
     // Allocate memory to hold <INIT_MAX_ADDR_COUNT> number of offsets
     uint64_t *valid_addresses = (uint64_t *)pfmalloc(init_memSize);
     if (valid_addresses == NULL) {
+        free(scanBuffer);
         free(args.maps);
         free(data);
         net_send_status(fd, CMD_DATA_NULL);
         return 1;
     }
-
+    
     // Array to hold thread descriptors
-    ScePthread threads[10]; // Assuming a maximum of 10 threads
+    ScePthread threads[10];
 
     // Loop through each memory section of the process
     for (size_t i = 0; i < args.num; i++) {
@@ -199,18 +210,23 @@ int proc_scan_handle(int fd, struct cmd_packet *packet) {
 
         // Now we build the structure which will hold necessary info
         // about the current process memory section to be scanned
-        PROC_SCAN_THREAD_INFO *thread_info = (PROC_SCAN_THREAD_INFO *)pfmalloc(sizeof(PROC_SCAN_THREAD_INFO));
+        PROC_SCAN_ARGS *thread_info = (PROC_SCAN_ARGS *)pfmalloc(sizeof(PROC_SCAN_ARGS));
         if (thread_info == NULL) {
             net_send_status(fd, CMD_ERROR);
             free(args.maps);
+            free(valid_addresses);
+            free(scanBuffer);
             free(data);
             return -1;
         }
-
+        
         // Otherwise if allocation succeeded we initialize the members
-        thread_info->map_entry = args.maps[i];
-        thread_info->sp = sp;
+        thread_info->processMaps = &args.maps;
+        thread_info->sectionIndex = i;
+        thread_info->scanPkt = sp;
         thread_info->scanValSize = scanValSize;
+        thread_info->scanBuffer = scanBuffer;
+        thread_info->pExtraValue = pExtraValue;
         thread_info->data = data;
         thread_info->fd = fd;
 
@@ -234,12 +250,12 @@ int proc_scan_handle(int fd, struct cmd_packet *packet) {
         // Otherwise if it failed, we set the current thread descriptor entry
         // to the value of NULL, to indicate it's an invalid thread
         else threads[addressCount++] = NULL;
-
-    }
-
+    } 
+    
+    
     // Wait for all threads to finish
-    for (size_t i = 0; i < addressCount; i++){
-        if (threads[i] != NULL) 
+    for (size_t i = 0; i < addressCount; i++) {
+        if (threads[i] != NULL)
             scePthreadJoin(threads[i], NULL);
     }
 
@@ -259,6 +275,7 @@ int proc_scan_handle(int fd, struct cmd_packet *packet) {
     net_send_data(fd, &endflag, sizeof(uint64_t));
 
     // Free allocated memory
+    free(scanBuffer);
     free(valid_addresses);
     free(args.maps);
     free(data);
