@@ -2,43 +2,36 @@
 #include "../debugger/include/proc.h"
 
 #define INIT_MAX_ADDR_COUNT 10000
-typedef struct PROC_SCAN_THREAD_INFO {
-    struct sys_proc_vm_map_args *maps;
-    struct cmd_proc_scan_packet *sp;
+
+typedef
+struct PROC_SCAN_THREAD_INFO {
+    // Memory Related
+    struct sys_proc_vm_map_args *processMaps;
+    struct proc_vm_map_entry *sectionToScan;
+    struct cmd_proc_scan_packet *scanPkt;
+    int sectionIndex;
+    // Process Related
+    int fd;
+    int pid;
+    // Scan Related
+    size_t scanValSize;
     unsigned char *pExtraValue;
     unsigned char *scanBuffer;
-    uint64_t *tempValidAddr;
-    int fd;
-    size_t sectionIndex;
-    int pid;
-    size_t scanValSize;
     unsigned char *data;
-}PROC_SCAN_ARGS;
+    // Address
+    uint64_t *tempValidAddr;
+} PROC_SCAN_ARGS;
 
-
-// Struct to hold information for thread function
-typedef 
-struct PROC_SCAN_THREAD_INFO_T{
-    struct proc_vm_map_entry* map_entry; // Memory map entry for the thread
-    struct cmd_proc_scan_packet* sp;     // Pointer to the scanning packet
-    size_t scanValSize;                  // Size of the value to be scanned
-    unsigned char* data;                 // Data to be scanned
-    int fd;                              // File descriptor
-} PROC_SCAN_THREAD_INFO;
 
 // Thread function for scanning one memory section of process
 void *ThreadFunctionScanProcSection(void *arg) {
-    PROC_SCAN_ARGS *args = (PROC_SCAN_ARGS *)arg;
+    // Define variables useed inside of the function
+    struct proc_vm_map_entry *sectionToScan;
+    PROC_SCAN_ARGS *scanArguments;
 
-    // Extract the arguments needed to do process section scan
-    size_t sectionIndex = args->sectionIndex;
-    uint64_t pid = args->pid;
-    size_t scanValSize = args->scanValSize;
-    unsigned char *data = args->data;
-    struct proc_vm_map_entry *maps = args->maps;
-    int fd = args->fd;
-    struct proc_vm_map_entry *section2Scan = &maps[sectionIndex];
-    unsigned char *pExtraValue = args->pExtraValue;
+    // Extract information about the scan, using <arg>
+    scanArguments = (PROC_SCAN_ARGS *)arg;
+    sectionToScan = &scanArguments->processMaps[scanArguments->sectionIndex];
 
     // Initialize variables for scanning this section
     size_t addressCount = 0;
@@ -47,41 +40,50 @@ void *ThreadFunctionScanProcSection(void *arg) {
 
     // Check if memory allocation was successful
     if (valid_addresses == NULL) {
-        free(args->maps);
-        free(data);
-        net_send_status(fd, CMD_DATA_NULL);
+        free(scanArguments->processMaps);
+        free(scanArguments->data);
+        net_send_status(scanArguments->fd, CMD_DATA_NULL);
         return NULL;
     }
 
-    // Loop through the memory section
-    for (uint64_t j = section2Scan->start; j < section2Scan->end; j += scanValSize) {
-        unsigned char scanBuffer[PAGE_SIZE];
+    // Calculate section start address and length
+    uint64_t sectionStartAddr = sectionToScan->start;
+    size_t sectionLen = sectionToScan->end - sectionStartAddr;
 
-        // Read the next page if needed
-        if (j % PAGE_SIZE == 0) {
-            sys_proc_rw(pid, j, scanBuffer, PAGE_SIZE, 0);
+    // BEGIN THE PROCESS MEMORY SECTION SCANNING
+    // Iterate through the memory section
+    for (uint64_t j = 0; j < sectionLen; j += scanArguments->scanValSize) {
+        // If the current offset is at a page boundary, read the next page
+        if (j == 0 || !(j % PAGE_SIZE)) {
+            sys_proc_rw(
+                scanArguments->pid,
+                j,
+                scanArguments->scanBuffer,
+                PAGE_SIZE,
+                FALSE
+            );
         }
 
-        // Calculate the scan offset and current address
+         // Calculate the scan offset and current address
         uint64_t scanOffset = j % PAGE_SIZE;
-        uint64_t curAddress = j;
+        uint64_t curAddress = sectionStartAddr + j;
 
         // Run comparison on the found value
         if (CompareProcScanValues(
-            args->sp->compareType,
-            args->sp->valueType,
-            scanValSize,
-            data,
-            scanBuffer + scanOffset,
-            pExtraValue)) {
+            scanArguments->scanPkt->compareType,
+            scanArguments->scanPkt->valueType,
+            scanArguments->scanValSize,
+            scanArguments->data,
+            scanArguments->scanBuffer + scanOffset,
+            scanArguments->pExtraValue)) {
 
-            // Resize the address list if needed
+           // Resize the address list if needed
             if (addressCount + 1 >= INIT_MAX_ADDR_COUNT || addressCount == INIT_MAX_ADDR_COUNT) {
                 if (ResizeTheAddrListBuffer(&valid_addresses, &init_memSize) == -1) {
-                    free(args->maps);
-                    free(data);
+                    free(scanArguments->processMaps);
+                    free(scanArguments->data);
                     free(valid_addresses);
-                    net_send_status(fd, CMD_DATA_NULL);
+                    net_send_status(scanArguments->fd, CMD_DATA_NULL);
                     return NULL;
                 }
             }
@@ -103,7 +105,6 @@ void *ThreadFunctionScanProcSection(void *arg) {
 
     return NULL;
 }
-
 
 int proc_scan_handle(int fd, struct cmd_packet *packet) {
     struct cmd_proc_scan_packet* sp;
