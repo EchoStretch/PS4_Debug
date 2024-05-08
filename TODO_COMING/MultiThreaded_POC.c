@@ -4,23 +4,22 @@
 #define INIT_MAX_ADDR_COUNT 10000 
 #define MAX_THREADS_COUNT 500
 
-typedef
-struct PROC_SCAN_THREAD_INFO {
-    // Memory Related
-    struct sys_proc_vm_map_args *processMaps;
-    struct proc_vm_map_entry *sectionToScan;
-    struct cmd_proc_scan_packet *scanPkt;
-    int sectionIndex;
-    // Process Related
-    int fd;
-    int pid;
-    // Scan Related
-    size_t scanValSize;
-    unsigned char *pExtraValue;
-    unsigned char *scanBuffer;
-    unsigned char *data;
-    // Address
-    uint64_t *tempValidAddr;
+// TODO: Improve the comments for the members, to be more accurate
+typedef struct PROC_SCAN_THREAD_INFO {
+    struct sys_proc_vm_map_args *processMaps;   // Process VM Map Arguments (contains info)
+    struct proc_vm_map_entry *sectionToScan;    // Process VM Map Entry for the Section to be scanned
+    struct cmd_proc_scan_packet *scanPkt;       // Pointer to the RPC? Memory Scan Packet (containing scan information)
+    int sectionIndex;                           // The Index of the section to be scanned (used in <maps> array)
+   
+    int fd;                                     // The FD (File descriptor) value passed to the proc_scan_handle function (used to send codes)
+    int pid;                                    // Process ID of the process
+
+    size_t scanValSize;                         // Size of the value to scan
+    unsigned char *pExtraValue;                 // Pointer to extra value (if any) used in scanning
+    unsigned char *scanBuffer;                  // Buffer for storing scanned data
+    unsigned char *data;                        // Pointer to received data for scanning
+    
+    uint64_t *tempValidAddr;                    // Temporary buffer for storing valid addresses found during scanning
 } PROC_SCAN_ARGS;
 
 
