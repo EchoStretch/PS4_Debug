@@ -8,17 +8,8 @@
 // This can be implemented in the future, but for now it's non-implemented
 #define nlPrintf(...) 
 
-// TODO:
-// Rewrite this macro as a function, rather than macro. 
-// - Currently every time it's used, a nested { ... } code-block is created in the function where it's called.
-//   This may or may not have an impact on the performace.
-// ----------------------
-// Macro acts as a custom printf-like function
-#define uprintf(fmt, ...) {                          \
-    char buffer[256];                                \
-    snprintf(buffer, 256, fmt, ##__VA_ARGS__);       \
-    sys_console_cmd(SYS_CONSOLE_CMD_PRINT, buffer);  \
-}
+// Can be used like printf, sends messages via network?
+int uprintf(const char *fmt, ...);
 
 // Related to custom syscall 109
 #define SYS_PROC_CMD_ALLOC      1
@@ -43,7 +34,7 @@
 
 // Related to custom syscall 107
 // The structure of a Process List Entry
-struct proc_list_entry  {
+struct proc_list_entry {
     char p_comm[32]; // Process name
     int pid;         // Process ID
 } __attribute__((packed));
@@ -130,5 +121,5 @@ int sys_proc_list(struct proc_list_entry *procs, uint64_t *num);
 void prefault(void *address, size_t size);
 void *pfmalloc(size_t size);
 void hexdump(void *data, size_t size);
-void *pfrealloc(void *ptr, size_t size, size_t old_size) ;
+void *pfrealloc(void *ptr, size_t size, size_t old_size);
 #endif

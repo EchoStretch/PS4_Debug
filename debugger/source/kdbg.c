@@ -1,5 +1,3 @@
-
-
 #include "../include/kdbg.h"
 
 void prefault(void *address, size_t size) {
@@ -57,6 +55,12 @@ void hexdump(void *data, size_t size) {
     uprintf("\n");
 }
 
+#define SYS_PROC_CMD_ALLOC      1
+#define SYS_PROC_CMD_FREE       2
+#define SYS_PROC_CMD_PROTECT    3
+#define SYS_PROC_VM_MAP         4
+#define SYS_PROC_CMD_CALL       5
+
 // custom syscall 107
 int sys_proc_list(struct proc_list_entry *procs, uint64_t *num) {
     return syscall(107, procs, num);
@@ -68,11 +72,6 @@ int sys_proc_rw(uint64_t pid, uint64_t address, void *data, uint64_t length, uin
 }
 
 // custom syscall 109
-#define SYS_PROC_CMD_ALLOC      1
-#define SYS_PROC_CMD_FREE       2
-#define SYS_PROC_CMD_PROTECT    3
-#define SYS_PROC_VM_MAP         4
-#define SYS_PROC_CMD_CALL       5
 int sys_proc_cmd(uint64_t pid, uint64_t cmd, void *data) {
     return syscall(109, pid, cmd, data);
 }
@@ -90,4 +89,14 @@ int sys_kern_rw(uint64_t address, void *data, uint64_t length, uint64_t write) {
 // custom syscall 112
 int sys_console_cmd(uint64_t cmd, void *data) {
     return syscall(112, cmd, data);
+}
+
+int uprintf(const char* fmt,...){
+    char buffer[500] = {0};
+    va_list args_;
+    va_start(args_, fmt);
+    _vsnprintf(buffer, sizeof(buffer)-1, fmt, args_);
+    va_end(args_);
+    sys_console_cmd(SYS_CONSOLE_CMD_PRINT, buffer);
+    return 0;
 }
