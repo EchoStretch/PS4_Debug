@@ -1,6 +1,4 @@
-// golden
-// 6/12/2018
-//
+
 
 #pragma once
 #ifndef _PROC_H

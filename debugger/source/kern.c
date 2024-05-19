@@ -1,22 +1,14 @@
-// golden
-// 6/12/2018
-//
-
 #include "../include/kern.h"
 
 int kern_base_handle(int fd, struct cmd_packet *packet) {
     uint64_t kernbase;
-
     sys_kern_base(&kernbase);
-
     net_send_status(fd, CMD_SUCCESS);
     net_send_data(fd, &kernbase, sizeof(uint64_t));
-
     return 0;
 }
 
 int kern_read_handle(int fd, struct cmd_packet *packet) {
-    // Define variables that are going to be used
     struct cmd_kern_read_packet *kReadPkt;
     void *data;
 
@@ -52,7 +44,6 @@ int kern_read_handle(int fd, struct cmd_packet *packet) {
 }
 
 int kern_write_handle(int fd, struct cmd_packet *packet) {
-    // Define variables that are going to be used
     struct cmd_kern_write_packet *kWritePkt; 
     void *data;
     
@@ -92,13 +83,9 @@ int kern_write_handle(int fd, struct cmd_packet *packet) {
 
 int kern_handle(int fd, struct cmd_packet *packet) {
     switch (packet->cmd) {
-        case CMD_KERN_BASE:
-            return kern_base_handle(fd, packet);
-        case CMD_KERN_READ:
-            return kern_read_handle(fd, packet);
-        case CMD_KERN_WRITE:
-            return kern_write_handle(fd, packet);
-    }
-
-    return 1;
+        case CMD_KERN_BASE:  return kern_base_handle(fd, packet);
+        case CMD_KERN_READ:  return kern_read_handle(fd, packet);
+        case CMD_KERN_WRITE: return kern_write_handle(fd, packet);
+        default:             return 1;
+    };
 }

@@ -1,6 +1,4 @@
-// golden
-// 6/12/2018
-//
+
 
 #include "../include/console.h"
 

@@ -1,6 +1,4 @@
-// golden
-// 6/12/2018
-//
+
 
 #include "../../ps4-payload-sdk/include/ps4.h"
 #include "../include/ptrace.h"

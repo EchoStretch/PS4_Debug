@@ -1,9 +1,7 @@
-// golden
-// 6/12/2018
-//
 
-#include "../include/../include/proc.h"
-#include "../include/../include/compare.h"
+
+#include "../include/proc.h"
+#include "../include/compare.h"
 
 int proc_list_handle(int fd, struct cmd_packet *packet) {
    void *data;
@@ -500,7 +498,7 @@ int proc_scan_handle(int fd, struct cmd_packet *packet) {
       net_send_status(fd, CMD_DATA_NULL);
       return 1;
    }
-   
+
    // Loop through each memory section of the process
    for (size_t i = 0; i < args.num; i++) {
       // Skip sections that cannot be read
@@ -515,7 +513,13 @@ int proc_scan_handle(int fd, struct cmd_packet *packet) {
       for (uint64_t j = 0; j < sectionLen; j += scanValSize) {
          // If the current offset is at a page boundary, read the next page
          if (j == 0 || !(j % PAGE_SIZE)) {
-            sys_proc_rw(sp->pid, sectionStartAddr, scanBuffer, PAGE_SIZE, 0);
+            sys_proc_rw(
+               sp->pid,
+               sectionStartAddr,
+               scanBuffer,
+               PAGE_SIZE,
+               FALSE
+            );
          }
 
          // Calculate the scan offset and current address
@@ -563,7 +567,7 @@ int proc_scan_handle(int fd, struct cmd_packet *packet) {
 
    // Notify the end of the scanning process
    uprintf("scan done");
-   
+
    // Now we enter a for-loop, so that we can send back each and every individual
    // memory address that we saved to the <valid_addresses> array during the 
    // process scanning process, back to the PC

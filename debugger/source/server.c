@@ -1,11 +1,13 @@
-// golden
-// 6/12/2018
-//
+
 
 #include "../include/server.h"
 
-struct server_client servclients[SERVER_MAXCLIENTS];
 
+#define TRUE     1
+#define FALSE    0
+#define ERRCODE -1
+
+struct server_client servclients[SERVER_MAXCLIENTS];
 struct server_client *alloc_client() {
     for (int i = 0; i < SERVER_MAXCLIENTS; i++) {
         if (servclients[i].id == 0) {
@@ -36,15 +38,14 @@ int handle_version(int fd, struct cmd_packet *packet) {
 }
 
 int cmd_handler(int fd, struct cmd_packet *packet) {
-    if (!VALID_CMD(packet->cmd)) {
+    if (!VALID_CMD(packet->cmd))
         return 1;
-    }
 
     uprintf("cmd_handler %X", packet->cmd);
 
-    if (packet->cmd == CMD_VERSION) {
+    if (packet->cmd == CMD_VERSION)
         return handle_version(fd, packet);
-    }
+
 
     if (VALID_PROC_CMD(packet->cmd)) {
         return proc_handle(fd, packet);
@@ -68,7 +69,7 @@ int check_debug_interrupt() {
     int signal;
     int r;
 
-    if (!wait4(curdbgctx->pid, &status, WNOHANG, NULL)) 
+    if (!wait4(curdbgctx->pid, &status, WNOHANG, NULL))
         return 0;
 
     signal = WSTOPSIG(status);
@@ -173,54 +174,47 @@ int handle_client(struct server_client *svc) {
     uint32_t rsize;
     uint32_t length;
     void *data;
-    int fd;
     int r;
+    int fd = svc->fd;
 
-    fd = svc->fd;
-
-    // setup time val for select
+    // Setup time val for select
     struct timeval tv;
     memset(&tv, NULL, sizeof(tv));
     tv.tv_usec = 1000;
 
-    while (1) {
-        // do a select
+    while (TRUE) {
+        // Do a select
         fd_set sfd;
         FD_ZERO(&sfd);
         FD_SET(fd, &sfd);
         errno = NULL;
         net_select(FD_SETSIZE, &sfd, NULL, NULL, &tv);
 
-        // check if we can recieve
+        // Check if we can recieve
         if (FD_ISSET(fd, &sfd)) {
-            // zero out
+            // Zero out
             memset(&packet, NULL, CMD_PACKET_SIZE);
 
-            // recieve our data
+            // Recieve our data, and check if the length of the recieved data
+            // indicates an error occured/no data was received and handle it
             rsize = net_recv_data(fd, &packet, CMD_PACKET_SIZE, 0);
+            if (rsize <= 0) goto error;
 
-            // if we didnt recieve hmm
-            if (rsize <= 0) {
+            // Check if disconnected
+            if (errno == ECONNRESET)
                 goto error;
-            }
 
-            // check if disconnected
-            if (errno == ECONNRESET) {
-                goto error;
-            }
         } else {
             // if we have a valid debugger context then check for interrupt
             // this does not block, as wait is called with option WNOHANG
             if (svc->debugging) {
-                if (check_debug_interrupt()) {
+                if (check_debug_interrupt())
                     goto error;
-                }
             }
 
             // check if disconnected
-            if (errno == ECONNRESET) {
+            if (errno == ECONNRESET)
                 goto error;
-            }
 
             sceKernelUsleep(25000);
             continue;
@@ -242,21 +236,19 @@ int handle_client(struct server_client *svc) {
 
         length = packet.datalen;
         if (length) {
-            // allocate data
+
+            // Allocate prefaulted memory for data
             data = pfmalloc(length);
-            if (!data) {
+            if (data == NULL)
                 goto error;
-            }
 
             uprintf("recieving data length %i", length);
 
-            // recv data
-            r = net_recv_data(fd, data, length, 1);
-            if (!r) {
+            // Receive data
+            if (!net_recv_data(fd, data, length, 1))
                 goto error;
-            }
 
-            // set data
+            // Set data
             packet.data = data;
         } else {
             packet.data = NULL;
@@ -268,19 +260,16 @@ int handle_client(struct server_client *svc) {
             curdbgcli = svc;
             curdbgctx = &svc->dbgctx;
         }
-
-        // handle the packet
-        r = cmd_handler(fd, &packet);
-
-        if (data) {
+        
+        // Check if data memory is valid, and deallocate it
+        if (data != NULL) {
             free(data);
             data = NULL;
         }
 
-        // check cmd handler error
-        if (r) {
+        // Handle the packet, and check the cmd handler for error
+        if (cmd_handler(fd, &packet))
             goto error;
-        }
     }
 
     error:
