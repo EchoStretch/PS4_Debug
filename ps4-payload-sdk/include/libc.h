@@ -4,7 +4,7 @@
 #define LIBC_H
 
 #include "types.h"
-
+#include <stdarg.h>
 typedef struct DIR DIR;
 typedef int FILE;
 

@@ -1,7 +1,6 @@
 #include "file.h"
 #include "kernel.h"
 #include "module.h"
-
 #include "libc.h"
 
 int libc;
