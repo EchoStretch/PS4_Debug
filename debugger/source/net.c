@@ -64,6 +64,5 @@ int net_recv_data(int fd, void *data, int length, int force) {
 
 int net_send_status(int fd, uint32_t status) {
     uint32_t d = status;
-
     return net_send_data(fd, &d, sizeof(uint32_t));
 }
