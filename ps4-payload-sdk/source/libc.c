@@ -15,20 +15,23 @@ void *(*memset)(void *destination, int value, size_t num);
 void *(*memcpy)(void *destination, const void *source, size_t num);
 int (*memcmp)(const void *s1, const void *s2, size_t n);
 void *(*memmove)(void *dst, const void *src, size_t len);
-errno_t (*memmove_s)(void *dest, rsize_t destsz, const void *src, rsize_t count);
+errno_t(*memmove_s)(void *dest, rsize_t destsz, const void *src, rsize_t count);
 char *(*strcpy)(char *destination, const char *source);
 char *(*strncpy)(char *destination, const char *source, size_t num);
 errno_t *(*strncpy_s)(char *restrict dest, rsize_t destsz, const char *restrict src, rsize_t count);
 char *(*strcat)(char *dest, const char *src);
 char *(*strncat)(char *dest, const char *src, size_t n);
-size_t (*strlen)(const char *s);
+size_t(*strlen)(const char *s);
 int (*strcmp)(const char *s1, const char *s2);
 int (*strncmp)(const char *s1, const char *s2, size_t n);
+
 int (*sprintf)(char *str, const char *format, ...);
 int (*snprintf)(char *str, size_t size, const char *format, ...);
 int (*snprintf_s)(char *restrict buffer, rsize_t bufsz, const char *restrict format, ...);
+int (*_vsnprintf)(char *restrict str, size_t size, const char *restrict format, va_list ap);
+
 int (*sscanf)(const char *str, const char *format, ...);
-int (*strtol)(const char* s1, char** s2, int base);
+int (*strtol)(const char *s1, char **s2, int base);
 char *(*strtok)(char *str, const char *delimiters);
 char *(*strchr)(const char *s, int c);
 char *(*strrchr)(const char *s, int c);
@@ -40,7 +43,7 @@ char *(*rindex)(const char *s, int c);
 int (*isdigit)(int c);
 int (*atoi)(const char *s);
 double (*atof)(const char *s);
-size_t (*strlcpy)(char *dst, const char *src, size_t size);
+size_t(*strlcpy)(char *dst, const char *src, size_t size);
 char *(*strerror)(int errnum);
 void *(*_Getpctype)();
 unsigned long (*_Stoul)(const char *, char **, int);
@@ -54,12 +57,12 @@ char *(*asctime)(const struct tm *tm);
 char *(*asctime_r)(const struct tm *tm, char *buf);
 char *(*ctime)(const time_t *timep);
 char *(*ctime_r)(const time_t *timep, char *buf);
-time_t (*time)(time_t *tloc);
+time_t(*time)(time_t *tloc);
 struct tm *(*gmtime)(const time_t *timep);
 struct tm *(*gmtime_s)(const time_t *timep, struct tm *result);
 struct tm *(*localtime)(const time_t *timep);
 struct tm *(*localtime_r)(const time_t *timep, struct tm *result);
-time_t (*mktime)(struct tm *tm);
+time_t(*mktime)(struct tm *tm);
 
 DIR *(*opendir)(const char *filename);
 struct dirent *(*readdir)(DIR *dirp);
@@ -72,8 +75,8 @@ int (*dirfd)(DIR *dirp);
 char *(*getprogname)();
 
 FILE *(*fopen)(const char *filename, const char *mode);
-size_t (*fread)(void *ptr, size_t size, size_t count, FILE *stream);
-size_t (*fwrite)(const void *ptr, size_t size, size_t count, FILE *stream);
+size_t(*fread)(void *ptr, size_t size, size_t count, FILE *stream);
+size_t(*fwrite)(const void *ptr, size_t size, size_t count, FILE *stream);
 int (*fseek)(FILE *stream, long int offset, int origin);
 long int (*ftell)(FILE *stream);
 int (*fclose)(FILE *stream);
@@ -97,9 +100,8 @@ int memset_s(void *s, rsize_t smax, int c, rsize_t n) {
 }
 
 void initLibc(void) {
-  if (libc) {
-    return;
-  }
+  if (libc) return;
+  
 
   libc = sceKernelLoadStartModule("libSceLibcInternal.sprx", 0, 0, 0, NULL, NULL);
 
@@ -121,9 +123,12 @@ void initLibc(void) {
   RESOLVE(libc, strlen);
   RESOLVE(libc, strcmp);
   RESOLVE(libc, strncmp);
+
+  getFunctionAddressByName(libc, "vsnprintf", &_vsnprintf);
   RESOLVE(libc, sprintf);
   RESOLVE(libc, snprintf);
   RESOLVE(libc, snprintf_s);
+
   RESOLVE(libc, sscanf);
   RESOLVE(libc, strtol);
   RESOLVE(libc, strtok);

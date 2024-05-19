@@ -30,9 +30,12 @@ extern char *(*strncat)(char *dest, const char *src, size_t n);
 extern size_t (*strlen)(const char *s);
 extern int (*strcmp)(const char *s1, const char *s2);
 extern int (*strncmp)(const char *s1, const char *s2, size_t n);
+
 extern int (*sprintf)(char *str, const char *format, ...);
 extern int (*snprintf)(char *str, size_t size, const char *format, ...);
 extern int (*snprintf_s)(char *restrict buffer, rsize_t bufsz, const char *restrict format, ...);
+extern int (*_vsnprintf)(char *restrict str, size_t size, const char *restrict format, va_list ap);
+
 extern int (*sscanf)(const char *str, const char *format, ...);
 extern int (*strtol)(const char* s1, char** s2, int base);
 extern char *(*strtok)(char *str, const char *delimiters);
