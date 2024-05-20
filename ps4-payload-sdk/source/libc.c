@@ -100,7 +100,6 @@ int memset_s(void *s, rsize_t smax, int c, rsize_t n) {
 
 void initLibc(void) {
   if (libc) return;
-  
 
   libc = sceKernelLoadStartModule("libSceLibcInternal.sprx", 0, 0, 0, NULL, NULL);
 
@@ -180,4 +179,14 @@ void initLibc(void) {
   RESOLVE(libc, ftell);
   RESOLVE(libc, fclose);
   RESOLVE(libc, fprintf);
+}
+
+// Cleanup function, needs to be called after module-specific
+// functions no longer needs to be used
+int cleanup_libc() {
+  if (!libc) return -1;
+
+  sceKernelClose(libc);
+  libc = 0;
+  return 1;
 }
