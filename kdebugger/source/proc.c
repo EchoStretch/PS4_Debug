@@ -45,14 +45,11 @@ int proc_get_vm_map(struct proc *p, struct proc_vm_map_entry **entries, uint64_t
     vm_map_lock_read(map);
 
     int num = map->nentries;
-    if (!num) {
-        goto error;
-    }
+    if (!num) goto error;
 
     r = vm_map_lookup_entry(map, NULL, &entry);
-    if(r) {
-        goto error;
-    }
+    if (r) goto error;
+
 
     info = (struct proc_vm_map_entry *)malloc(num * sizeof(struct proc_vm_map_entry), M_TEMP, 2);
     if (!info) {
@@ -67,48 +64,42 @@ int proc_get_vm_map(struct proc *p, struct proc_vm_map_entry **entries, uint64_t
         info[i].prot = entry->prot & (entry->prot >> 8);
         memcpy(info[i].name, entry->name, sizeof(info[i].name));
 
-        if (!(entry = entry->next)) {
+        if (!(entry = entry->next))
             break;
-        }
     }
 
-error:
+    error:
     vm_map_unlock_read(map);
 
-    if (entries) {
-        *entries = info;
-    }
-
-    if (num_entries) {
-        *num_entries = num;
-    }
+    if (entries)     *entries = info;
+    if (num_entries) *num_entries = num;
 
     return 0;
 }
 
 int proc_rw_mem(struct proc *p, void *ptr, uint64_t size, void *data, uint64_t *n, int write) {
+    if (!p) return 1;
+
+    if (size == 0) {
+        if (n) *n = 0;
+        return 0;
+    }
+
     struct thread *td = curthread();
     struct iovec iov;
     struct uio uio;
     int r = 0;
 
-    if (!p) {
-        return 1;
-    }
-
-    if (size == 0) {
-        if (n) {
-            *n = 0;
-        }
-
-        return 0;
-    }
-
+    // Initialize both the uio and iovec struct instances
+    // to NULL, clearing out any junk
     memset(&iov, NULL, sizeof(iov));
+    memset(&uio, NULL, sizeof(uio));
+
+    // TODO: Comment what the purpose of iovec is
     iov.iov_base = (uint64_t)data;
     iov.iov_len = size;
 
-    memset(&uio, NULL, sizeof(uio));
+    // TODO: Comment what the purpose of uio is
     uio.uio_iov = (uint64_t)&iov;
     uio.uio_iovcnt = 1;
     uio.uio_offset = (uint64_t)ptr;
@@ -119,9 +110,7 @@ int proc_rw_mem(struct proc *p, void *ptr, uint64_t size, void *data, uint64_t *
 
     r = proc_rwmem(p, &uio);
 
-    if (n) {
-        *n = (uint64_t)((uint64_t)size - uio.uio_resid);
-    }
+    if (n) *n = (uint64_t)((uint64_t)size - uio.uio_resid);
 
     return r;
 }
@@ -135,15 +124,11 @@ inline int proc_write_mem(struct proc *p, void *ptr, uint64_t size, void *data, 
 }
 
 int proc_allocate(struct proc *p, void **address, uint64_t size) {
+    if (!address) return 1;
+
     uint64_t addr = NULL;
     int r = 0;
     uint64_t alignedSize = (size + 0x3FFFull) & ~0x3FFFull;
-
-    if (!address) {
-        r = 1;
-        goto error;
-    }
-
     struct vmspace *vm = p->p_vmspace;
     struct vm_map *map = &vm->vm_map;
 
@@ -152,44 +137,32 @@ int proc_allocate(struct proc *p, void **address, uint64_t size) {
     r = vm_map_findspace(map, NULL, size, &addr);
     if (r) {
         vm_map_unlock(map);
-        goto error;
+        return r;
     }
 
     r = vm_map_insert(map, NULL, NULL, addr, addr + alignedSize, VM_PROT_ALL, VM_PROT_ALL, 0);
-
     vm_map_unlock(map);
 
-    if (r) {
-        goto error;
-    }
+    if (r) return r;
+    if (address) *address = (void *)addr;
 
-    if (address) {
-        *address = (void *)addr;
-    }
-
-error:
     return r;
 }
 
 int proc_deallocate(struct proc *p, void *address, uint64_t size) {
-    int r = 0;
     uint64_t alignedSize = (size + 0x3FFFull) & ~0x3FFFull;
 
     struct vmspace *vm = p->p_vmspace;
     struct vm_map *map = &vm->vm_map;
 
     vm_map_lock(map);
-
-    r = vm_map_delete(map, (uint64_t)address, (uint64_t)address + alignedSize);
-
+    int result = vm_map_delete(map, (uint64_t)address, (uint64_t)address + alignedSize);
     vm_map_unlock(map);
 
-    return r;
+    return result;
 }
 
 int proc_mprotect(struct proc *p, void *address, uint64_t size, int new_prot) {
-    int r = 0;
-
     uint64_t alignedSize = (size + 0x3FFFull) & ~0x3FFFull;
     uint64_t addr = (uint64_t)address;
     uint64_t addrend = addr + alignedSize;
@@ -198,76 +171,65 @@ int proc_mprotect(struct proc *p, void *address, uint64_t size, int new_prot) {
     struct vm_map *map = &vm->vm_map;
 
     // update the max prot then set new prot
-    r = vm_map_protect(map, addr, addrend, new_prot, 1);
-    if (r) {
-        return r;
-    }
+    int result = vm_map_protect(map, addr, addrend, new_prot, 1);
+    if (result) return result;
 
-    r = vm_map_protect(map, addr, addrend, new_prot, 0);
-    
-    return r;
+    return vm_map_protect(map, addr, addrend, new_prot, 0);
 }
 
 int proc_create_thread(struct proc *p, uint64_t address) {
+    struct proc_vm_map_entry *entries = NULL;
     void *rpcldraddr = NULL;
     void *stackaddr = NULL;
-    struct proc_vm_map_entry *entries = NULL;
     uint64_t num_entries = 0;
     uint64_t n = 0;
     int r = 0;
 
+    // Calculate the size of our Loader
     uint64_t ldrsize = sizeof(rpcldr);
     ldrsize += (PAGE_SIZE - (ldrsize % PAGE_SIZE));
-    
+
+    // Set the Stack Max? Size
     uint64_t stacksize = 0x80000;
 
-    // allocate rpc ldr
+    // Allocate Memory for RPC Loader in Process
     r = proc_allocate(p, &rpcldraddr, ldrsize);
-    if (r) {
-        goto error;
-    }
+    if (r) goto error;
 
-    // allocate stack
+    // Allocate Memory for RPC Stack? in Process
     r = proc_allocate(p, &stackaddr, stacksize);
-    if (r) {
-        goto error;
-    }
+    if (r) goto error;
 
-    // write loader
+    // Write the RPC Loader to the Allocated Memory 
     r = proc_write_mem(p, rpcldraddr, sizeof(rpcldr), (void *)rpcldr, &n);
-    if (r) {
-        goto error;
-    }
+    if (r) goto error;
 
-    // donor thread
+    // Create our Donor Thread
     struct thread *thr = TAILQ_FIRST(&p->p_threads);
 
-    // find libkernel base
+    // Try to find libkernel base
     r = proc_get_vm_map(p, &entries, &num_entries);
-    if (r) {
-        goto error;
-    }
+    if (r) goto error;
 
-    // offsets are for 5.05 libraries
+    // The memory addresses/offsets? to the coresponding functions present
+    // in the memory of either one of following system modules:
+    // libkernel.sprx, libkernel_web.sprx, or libkernel_sys.sprx
+    uint64_t _scePthreadAttrInit = 0;
+    uint64_t _scePthreadAttrSetstacksize = 0;
+    uint64_t _scePthreadCreate = 0;
+    uint64_t _thr_initial = 0;
 
-    // libkernel.sprx
-    // 0x12AA0 scePthreadCreate
-    // 0x84C20 thr_initial
-
-    // libkernel_web.sprx
-    // 0x98C0 scePthreadCreate
-    // 0x84C20 thr_initial
-
-    // libkernel_sys.sprx
-    // 0x135D0 scePthreadCreate
-    // 0x89030 thr_initial
-
-    uint64_t _scePthreadAttrInit = 0, _scePthreadAttrSetstacksize = 0, _scePthreadCreate = 0, _thr_initial = 0;
     for (int i = 0; i < num_entries; i++) {
-        if (entries[i].prot != (PROT_READ | PROT_EXEC)) {
+        // First we make sure that the protection set for the current entry inside
+        // entries, prevents it's memory? from being read and executed? if true we
+        // skip to the next entry in entries and try again
+        if (entries[i].prot != (PROT_READ | PROT_EXEC))
             continue;
-        }
 
+        // First we check if the name of the current entry in entries is equal to 
+        // "libkernel.sprx", if true! we then obtain the memory addresses of the 
+        // SCE functions present in the memory of that module entry
+        // Once all addresses has been found, we exit the for-loop
         if (!memcmp(entries[i].name, "libkernel.sprx", 14)) {
             _scePthreadAttrInit = entries[i].start + 0x00013A40;
             _scePthreadAttrSetstacksize = entries[i].start + 0x00013A60;
@@ -275,14 +237,23 @@ int proc_create_thread(struct proc *p, uint64_t address) {
             _thr_initial = entries[i].start + 0x00435420;
             break;
         }
-        if (!memcmp(entries[i].name, "libkernel_web.sprx", 18))
-        {
+
+        // If it's not libkernel.sprx, then we check if the name of the current entry in 
+        // entries is equal to "libkernel_web.sprx", if true! we then obtain the memory
+        // addresses of the SCE functions present in the memory of that module entry.
+        // Once all addresses has been found, we exit the for-loop
+        if (!memcmp(entries[i].name, "libkernel_web.sprx", 18)) {
             _scePthreadAttrInit = entries[i].start + 0x0001FD20;
             _scePthreadAttrSetstacksize = entries[i].start + 0x00010540;
             _scePthreadCreate = entries[i].start + 0x0000A0F0;
             _thr_initial = entries[i].start + 0x00435420;
             break;
         }
+
+        // If it's not libkernel_web.sprx, then we check if the name of the current entry in 
+        // entries is equal to "libkernel_sys.sprx", if true! we then obtain the memory
+        // addresses of the SCE functions present in the memory of that module entry
+        // Once all addresses has been found, we exit the for-loop
         if (!memcmp(entries[i].name, "libkernel_sys.sprx", 18)) {
             _scePthreadAttrInit = entries[i].start + 0x00014570;
             _scePthreadAttrSetstacksize = entries[i].start + 0x00014590;
@@ -292,93 +263,112 @@ int proc_create_thread(struct proc *p, uint64_t address) {
         }
     }
 
-    if (!_scePthreadAttrInit) {
-        goto error;
-    }
+    // If the scePthreadAttrInit function address is invalid we
+    // jump to the goto label, after which cleanup code is.
+    if (!_scePthreadAttrInit) goto error;
 
-    // write variables
+    // Begin Writing Variables to the RPC Loader    
+    // Write the address of the stub entry point to the RPC Loader's stubentry field
     r = proc_write_mem(p, rpcldraddr + offsetof(struct rpcldr_header, stubentry), sizeof(address), (void *)&address, &n);
-    if (r) {
-        goto error;
-    }
+    if (r) goto error;
 
+    // Write the address of the scePthreadAttrInit function to the RPC Loader's scePthreadAttrInit field
     r = proc_write_mem(p, rpcldraddr + offsetof(struct rpcldr_header, scePthreadAttrInit), sizeof(_scePthreadAttrInit), (void *)&_scePthreadAttrInit, &n);
-    if (r) {
-        goto error;
-    }
+    if (r) goto error;
 
+    // Write the address of the scePthreadAttrSetstacksize function to the RPC Loader's scePthreadAttrSetstacksize field
     r = proc_write_mem(p, rpcldraddr + offsetof(struct rpcldr_header, scePthreadAttrSetstacksize), sizeof(_scePthreadAttrSetstacksize), (void *)&_scePthreadAttrSetstacksize, &n);
-    if (r) {
-        goto error;
-    }
+    if (r) goto error;
 
+    // Write the address of the scePthreadCreate function to the RPC Loader's scePthreadCreate field
     r = proc_write_mem(p, rpcldraddr + offsetof(struct rpcldr_header, scePthreadCreate), sizeof(_scePthreadCreate), (void *)&_scePthreadCreate, &n);
-    if (r) {
-        goto error;
-    }
+    if (r) goto error;
 
+    // Write the address of the initial thread function to the RPC Loader's thr_initial field
     r = proc_write_mem(p, rpcldraddr + offsetof(struct rpcldr_header, thr_initial), sizeof(_thr_initial), (void *)&_thr_initial, &n);
-    if (r) {
-        goto error;
-    }
+    if (r) goto error;
 
-    // execute loader
-    // note: do not enter in the pid information as it expects it to be stored in userland
+    // Execute the RPC Loader? or just Loader?
+    // NOTE: Do not enter in the pid information as it expects it to be stored in userland
     uint64_t ldrentryaddr = (uint64_t)rpcldraddr + *(uint64_t *)(rpcldr + 4);
-    r = create_thread(thr, NULL, (void *)ldrentryaddr, NULL, stackaddr, stacksize, NULL, NULL, NULL, 0, NULL);
-    if (r) {
-        goto error;
-    }
+    r = create_thread(
+        thr,
+        NULL,
+        (void *)ldrentryaddr,
+        NULL,
+        stackaddr,
+        stacksize,
+        NULL, NULL, NULL, 0, NULL
+    );
+    if (r) goto error;
 
-    // wait until loader is done
+    // Begin waiting until the loader is done!
     uint8_t ldrdone = 0;
     while (!ldrdone) {
-        r = proc_read_mem(p, (void *)(rpcldraddr + offsetof(struct rpcldr_header, ldrdone)), sizeof(ldrdone), &ldrdone, &n);
-        if (r) {
-            goto error;
-        }
+        // TODO: Comment this part
+        r = proc_read_mem(
+            p,
+            (void *)(rpcldraddr + offsetof(struct rpcldr_header, ldrdone)),
+            sizeof(ldrdone),
+            &ldrdone, &n
+        );
+        if (r) goto error;
     }
 
-error:
-    if (entries) {
-        free(entries, M_TEMP);
-    }
-
-    if (rpcldraddr) {
-        proc_deallocate(p, rpcldraddr, ldrsize);
-    }
-
-    if (stackaddr) {
-        proc_deallocate(p, stackaddr, stacksize);
-    }
-
+    // Cleanup Part
+    error:;
+    if (entries != NULL)    free(entries, M_TEMP);
+    if (rpcldraddr != NULL) proc_deallocate(p, rpcldraddr, ldrsize);
+    if (stackaddr != NULL)  proc_deallocate(p, stackaddr, stacksize);
     return r;
 }
 
 int proc_map_elf(struct proc *p, void *elf, void *exec) {
+    // Cast the input elf pointer to a 64-bit ELF header structure
     struct Elf64_Ehdr *ehdr = (struct Elf64_Ehdr *)elf;
 
+    // Obtain the program header from the ELF header
     struct Elf64_Phdr *phdr = elf_pheader(ehdr);
     if (phdr) {
-        // use segments
+        // Iterate over all program headers if they exist (use segments)
         for (int i = 0; i < ehdr->e_phnum; i++) {
+            // TODO: Comment this line
             struct Elf64_Phdr *phdr = elf_segment(ehdr, i);
 
+            // If the segment has a file size (its not empty)
             if (phdr->p_filesz) {
-                proc_write_mem(p, (void *)((uint8_t *)exec + phdr->p_paddr), phdr->p_filesz, (void *)((uint8_t *)elf + phdr->p_offset), NULL);
+                proc_write_mem(
+                    p,
+                    // Physical address of the segment in the exec space?
+                    (void *)((uint8_t *)exec + phdr->p_paddr),
+                    // Size of the segment in the file?
+                    phdr->p_filesz,
+                    // Address in the ELF file where the segment data is located?
+                    (void *)((uint8_t *)elf + phdr->p_offset),
+                    NULL // Unknown?
+                );
             }
         }
     } else {
-        // use sections
+        // Iterate over all section headers if program headers do not exist (use sections)
         for (int i = 0; i < ehdr->e_shnum; i++) {
+            // TODO: Comment this line
             struct Elf64_Shdr *shdr = elf_section(ehdr, i);
 
-            if (!(shdr->sh_flags & SHF_ALLOC)) {
+            // TODO: Is this comment true? do i need to adjust it? 
+            // Skip sections that are not allocated in memory?
+            if (!(shdr->sh_flags & SHF_ALLOC))
                 continue;
-            }
 
+            // Check if the section has a size (its not empty)
             if (shdr->sh_size) {
-                proc_write_mem(p, (void *)((uint8_t *)exec + shdr->sh_addr), shdr->sh_size, (void *)((uint8_t *)elf + shdr->sh_offset), NULL);
+                proc_write_mem(
+                    p,
+                    (void *)((uint8_t *)exec + shdr->sh_addr),
+                    shdr->sh_size,
+                    (void *)((uint8_t *)elf + shdr->sh_offset),
+                    NULL // Unknown?
+                );
             }
         }
     }
@@ -401,16 +391,16 @@ int proc_relocate_elf(struct proc *p, void *elf, void *exec) {
                 uint8_t *value = NULL;
 
                 switch (ELF64_R_TYPE(reltab->r_info)) {
-                case R_X86_64_RELATIVE:
-                    // *ref = (uint8_t *)exec + reltab->r_addend;
-                    value = (uint8_t *)exec + reltab->r_addend;
-                    proc_write_mem(p, ref, sizeof(value), (void *)&value, NULL);
-                    break;
-                case R_X86_64_64:
-                case R_X86_64_JUMP_SLOT:
-                case R_X86_64_GLOB_DAT:
-                    // not supported
-                    break;
+                    case R_X86_64_RELATIVE:
+                        // *ref = (uint8_t *)exec + reltab->r_addend;
+                        value = (uint8_t *)exec + reltab->r_addend;
+                        proc_write_mem(p, ref, sizeof(value), (void *)&value, NULL);
+                        break;
+                    case R_X86_64_64:
+                    case R_X86_64_JUMP_SLOT:
+                    case R_X86_64_GLOB_DAT:
+                        // not supported
+                        break;
                 }
             }
         }
@@ -460,6 +450,6 @@ int proc_load_elf(struct proc *p, void *elf, uint64_t *elfbase, uint64_t *entry)
         *entry = (uint64_t)elfaddr + ehdr->e_entry;
     }
 
-error:
+    error:
     return r;
 }
