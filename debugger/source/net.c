@@ -1,6 +1,8 @@
+// golden
+// 6/12/2018
+//
 
-
-#include "../include/net.h"
+#include "net.h"
 
 int net_select(int fd, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) {
     return syscall(93, fd, readfds, writefds, exceptfds, timeout);

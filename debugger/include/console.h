@@ -1,13 +1,11 @@
-
 #pragma once
 #ifndef _CONSOLE_H
 #define _CONSOLE_H
 
-#include "../../ps4-payload-sdk/include/ps4.h"
-#include "./protocol.h"
-#include "./net.h"
-#include "./debug.h"
-
+#include <ps4.h>
+#include "protocol.h"
+#include "net.h"
+#include "ddebug.h"
 
 int console_reboot_handle(int fd, struct cmd_packet *packet);
 int console_print_handle(int fd, struct cmd_packet *packet);

@@ -1,12 +1,16 @@
-
+// golden
+// 6/12/2018
+//
 
 #pragma once
 #ifndef _PROC_H
 #define _PROC_H
+
 #include <stdbool.h>
-#include "../../ps4-payload-sdk/include/types.h"
-#include "./protocol.h"
-#include "./net.h"
+#include <ps4.h>
+//#include <types.h>
+#include "protocol.h"
+#include "net.h"
 
 // Structure representing a memory map entry for a process
 struct proc_vm_map_entry {

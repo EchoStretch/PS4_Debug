@@ -1,4 +1,8 @@
-#include "../include/kern.h"
+// golden
+// 6/12/2018
+//
+
+#include "kern.h"
 
 int kern_base_handle(int fd, struct cmd_packet *packet) {
     uint64_t kernbase;

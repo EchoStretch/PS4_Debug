@@ -1,6 +1,8 @@
+// golden
+// 6/12/2018
+//
 
-
-#include "../include/server.h"
+#include "server.h"
 
 
 #define TRUE     1

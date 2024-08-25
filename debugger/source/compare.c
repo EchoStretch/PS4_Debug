@@ -1,4 +1,5 @@
-#include "../include/compare.h"
+#include "compare.h"
+
 #define FUZZY_TOLERANCE 1.0
 
 int compare_value_exact(BYTE *pScanValue, BYTE *pMemoryValue, size_t valTypeLength) {

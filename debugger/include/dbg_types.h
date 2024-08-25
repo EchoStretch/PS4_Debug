@@ -3,8 +3,8 @@
 //
 
 #pragma once
-#ifndef _DBG_TYPES_HH
-#define _DBG_TYPES_HH
+#ifndef _DBG_TYPES_H
+#define _DBG_TYPES_H
 
 //
 // int-based boolean type values

@@ -1,7 +1,8 @@
 #pragma once
-#ifndef _COMPARE_TYPES_HH
-#define _COMPARE_TYPES_HH
-#include "./proc.h"
+#ifndef _COMPARE_TYPES_H
+#define _COMPARE_TYPES_H
+
+#include "proc.h"
 
 // Make sure the TRUE macro has not been defined yet
 #ifndef TRUE

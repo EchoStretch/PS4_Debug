@@ -1,6 +1,8 @@
+// golden
+// 6/12/2018
+//
 
-
-#include "../include/console.h"
+#include "console.h"
 
 int console_reboot_handle(int fd, struct cmd_packet *packet) {
     if(g_debugging) {

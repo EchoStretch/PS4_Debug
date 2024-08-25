@@ -1,9 +1,13 @@
-#pragma once
-#ifndef _KDEBUGGER_H
-#define _KDEBUGGER_H
+// golden
+// 6/12/2018
+//
 
+#pragma once
+#ifndef _KDBG_H
+#define _KDBG_H
+
+#include <ps4.h>
 #include <stdarg.h>
-#include "../../ps4-payload-sdk/include/ps4.h"
 
 // This can be implemented in the future, but for now it's non-implemented
 #define nlPrintf(...) 

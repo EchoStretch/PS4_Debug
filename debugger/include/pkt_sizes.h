@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _PACKET_SIZES_HH
-#define _PACKET_SIZES_HH
+#ifndef _PKT_SIZES_H
+#define _PKT_SIZES_H
 
 #define CMD_PROC_READ_PACKET_SIZE 16
 #define CMD_PROC_WRITE_PACKET_SIZE 16

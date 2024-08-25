@@ -1,4 +1,8 @@
-#include "../include/ptrace.h"
+// golden
+// 6/12/2018
+//
+
+#include "ptrace.h"
 
 int ptrace(int req, int pid, void *addr, int data) {
     errno = NULL;    

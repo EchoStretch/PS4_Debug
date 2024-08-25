@@ -1,7 +1,9 @@
+// golden
+// 6/12/2018
+//
 
-
-#include "../include/proc.h"
-#include "../include/compare.h"
+#include "proc.h"
+#include "compare.h"
 
 int proc_list_handle(int fd, struct cmd_packet *packet) {
    void *data;

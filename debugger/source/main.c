@@ -1,9 +1,11 @@
+// golden
+// 6/12/2018
+//
 
-
-#include "../../ps4-payload-sdk/include/ps4.h"
-#include "../include/ptrace.h"
-#include "../include/server.h"
-#include "../include/debug.h"
+#include <ps4.h>
+#include "ptrace.h"
+#include "server.h"
+#include "ddebug.h"
 
 int _main(void) {
     initKernel();
@@ -17,7 +19,7 @@ int _main(void) {
     sceKernelSleep(2);
 
     // just a little notify
-    sceSysUtilSendSystemNotificationWithText(222, "PS4Debug Loaded!\nBy a0zhar on Github!");
+    sceSysUtilSendSystemNotificationWithText(222, "ps4debug by golden\nUpdated By EchoStretch");
     
     // jailbreak current thread
     sys_console_cmd(SYS_CONSOLE_CMD_JAILBREAK, NULL);

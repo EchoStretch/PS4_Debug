@@ -1,15 +1,19 @@
+// golden
+// 6/12/2018
+//
+
 #pragma once
 #ifndef _PROTOCOL_H
 #define _PROTOCOL_H
 
-#include "../../ps4-payload-sdk/include/types.h"
-#include "../../ps4-payload-sdk/include/network.h"
-#include "./pkt_sizes.h"
-#include "./errno.h"
-#include "./kdbg.h"
+#include <ps4.h>
+//#include <types.h>
+//#include <network.h>
+#include "pkt_sizes.h"
+#include "errno.h"
+#include "kdbg.h"
 
-
-#define PACKET_VERSION          "1.2"
+#define PACKET_VERSION          "1.3"
 #define PACKET_MAGIC            0xFFAABBCC
 
 #define CMD_VERSION             0xBD000001
