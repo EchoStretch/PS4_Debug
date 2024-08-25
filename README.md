@@ -1,7 +1,5 @@
 # PS4Debug (A PS4 Debugging Payload)
-This repository contains my custom version or fork of GiantPluto's FW 6.72 port of the ps4debug payload. I am the sole maintainer of this version and will be responsible for adding new features, pushing code improvements, fixes, etc. 
-
-A huge objective/goal is to make this PS4Debug Source Code firmware-agnostic, meaning that the ps4debug.bin payload compiled from this Source Code will be compatible with the following system firmwares: **5.05, 6.72, 7.02, 7.55, and 9.00**. Eliminating the need of having 5 seperate source codes, one for each firmware version.
+This repository contains my custom version or fork of EchoStretch FW 5.05, 6.72, and 7.00 to 11.00 port of the ps4debug payload. I am the sole maintainer of this version and will be responsible for adding new features, pushing code improvements, fixes, etc. 
 
 ## TODOs and News
 
@@ -30,5 +28,7 @@ You need to send the value of **0xBDAA000D** to the PS4Debug server if you want 
 
 
 ## Credits
-- GiantPluto - for his 6.72 port of the ps4debug payload
-- jogolden - for originally creating this 
+- [jogolden](https://github.com/jogolden/ps4debug) - for originally creating this
+- [DeathRGH](https://github.com/DeathRGH/frame4) - for multi fw example
+- [BestPig](https://github.com/BestPig) - Help with offsets
+- [EchoStretch](https://github.com/EchoStretch/ps4debug) - Putting it all together
